@@ -30,6 +30,7 @@ import { withTranscriptAnchor } from "./viewport.ts";
 import { getThinkingLevelColorizer } from "./loader/format.ts";
 import { BORDER_GLYPHS } from "./loader/prompt-decorator.ts";
 import { SessionManager as LoaderSession } from "./loader/session.ts";
+import { installStatusline } from "./statusline/index.ts";
 import type { DecoratorSettings } from "./loader/settings.ts";
 
 // ─── State (global so a reloaded module replaces state instead of re-wrapping prototypes) ────
@@ -691,11 +692,14 @@ export default function piFrame(pi: ExtensionAPI): void {
   const loader = new LoaderSession(pi);
   loader.install();
   S().promptSettings = () => loader.settings.decorations;
+  const statusline = installStatusline(pi);
 
   pi.registerCommand("frame-settings", {
     description: "pi-frame 设置：输入框、加载动画、状态栏",
     handler: async (_args, ctx) => {
-      await loader.showSettings(ctx);
+      const page = await ctx.ui.select("pi-frame 设置", ["输入框与加载动画", "状态栏"]);
+      if (page === "输入框与加载动画") await loader.showSettings(ctx);
+      else if (page === "状态栏") await statusline.openSettings(ctx);
       S().tui?.requestRender();
     },
   });

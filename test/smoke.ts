@@ -14,7 +14,7 @@ const pi: any = {
   registerShortcut: (k: string, o: any) => (shortcuts[k] = o.handler),
   registerCommand: (n: string, o: any) => (commands[n] = o.handler),
   appendEntry: (t: string, d: any) => entries.push({ t, d }),
-  registerMessageRenderer() {}, getThinkingLevel: () => "medium",
+  registerMessageRenderer() {}, exec: async () => ({ code: 1, stdout: "", stderr: "", killed: false }), getThinkingLevel: () => "medium",
 };
 piFrame(pi);
 
@@ -32,7 +32,7 @@ const ui: any = {
   onTerminalInput: (h: Function) => { listeners.push(h); return () => {}; },
   setToolsExpanded: (e: boolean) => { toolsExpanded = e; for (const c of chat.children as any[]) c.setExpanded?.(e); },
   setStatus: (k: string, t: string) => (statuses[k] = t),
-  setWorkingIndicator() {}, setWorkingMessage() {},
+  setWorkingIndicator() {}, setWorkingMessage() {}, getEditorComponent: () => undefined, setEditorComponent() {},
   notify: () => {},
 };
 const ctx: any = { hasUI: true, mode: "tui", cwd: "/Users/korenkrita/Coding", ui, sessionManager: { getBranch: () => [] } };

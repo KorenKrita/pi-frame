@@ -32,7 +32,7 @@ function harness(factory = piFrame) {
     registerCommand: (name: string, options: { handler: Function }) => (commands[name] = options.handler),
     registerShortcut: (name: string, options: { handler: Function }) => (shortcuts[name] = options.handler),
     appendEntry: (type: string, data: unknown) => entries.push({ type, data }),
-    registerMessageRenderer() {}, getThinkingLevel: () => "medium",
+    registerMessageRenderer() {}, exec: async () => ({ code: 1, stdout: "", stderr: "", killed: false }), getThinkingLevel: () => "medium",
   } as any);
   const ctx: any = {
     hasUI: true,
@@ -45,7 +45,7 @@ function harness(factory = piFrame) {
       theme: themeModule.theme,
       setWidget: (_key: string, factory: any) => { if (typeof factory === "function") factory(tui, themeModule.theme); },
       setStatus() {},
-      setWorkingIndicator() {}, setWorkingMessage() {},
+      setWorkingIndicator() {}, setWorkingMessage() {}, getEditorComponent: () => undefined, setEditorComponent() {},
       notify() {},
       onTerminalInput: (listener: Function) => { listeners.push(listener); return () => {}; },
       setToolsExpanded: (value: boolean) => {

@@ -22,7 +22,7 @@ Rendering does not change tool schemas, execution, stored arguments, or results,
 
 ## Settings: `/frame-settings`
 
-Opens a settings menu (Chinese UI) with a live preview. Settings persist to `~/.pi/agent/pi-frame/prompt-loader.json` and apply on ⏎. On first run, an existing `~/.pi/agent/pi-topping/settings.json` is used as the starting point.
+First pick a page (prompt box & loader, or statusline); each opens a settings menu (Chinese UI) with a live preview and applies on ⏎. Settings persist to `~/.pi/agent/pi-frame/prompt-loader.json` and `~/.pi/agent/pi-frame/statusline.json`. On first run, existing `~/.pi/agent/pi-topping/settings.json` and `~/.pi/agent/pi-topping-statusline/settings.json` are used as the starting point.
 
 ## User prompt box
 
@@ -35,6 +35,12 @@ This is display-only. The prompt still goes through Pi's native user-message pat
 While Pi works, the loader line shows an animated spinner, a random activity word, a shimmer, a token activity meter, the token rate, elapsed time, output tokens, and the response model when it differs from the selected one. Every element can be toggled, recolored, and reordered. Activity words come from pi-frame's own Chinese list (`loader/words.ts`) plus optional word packs (`loader/wordpacks/`, or your own in `~/.pi/agent/pi-frame/word-packs.json`).
 
 The loader and prompt box are adapted from [pi-topping](https://github.com/underactive/pi-topping) (MIT, see `loader/LICENSE`). Unlike pi-topping, pi-frame never intercepts `input` and has no completion marker.
+
+## Statusline
+
+The editor is wrapped in a box whose borders carry segment groups: Pi symbol, model, provider, thinking level, path, git, PR (top left); token rate and session name (top right); feeds, token rate, Pi stats, context bar and stats (bottom right); scroll hint (bottom left). Separator, symbol set, border style, transparency, the rainbow border at max thinking, and embedding Pi's status spinners in the border are configurable. Feeds show numbers other extensions publish as custom entries (seeded with pi-prompt-cache's savings).
+
+Ported from [pi-topping-statusline](https://github.com/underactive/pi-topping-statusline) (MIT, itself a port of oh-my-pi's statusline; see `statusline/LICENSE`).
 
 ## Controls
 

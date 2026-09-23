@@ -22,15 +22,19 @@ const ctx = {
     theme: themeModule.theme,
     setWidget() {},
     setStatus() {},
-    setWorkingIndicator() {}, setWorkingMessage() {},
+    setWorkingIndicator() {}, setWorkingMessage() {}, getEditorComponent: () => undefined, setEditorComponent() {},
     setToolsExpanded() {},
     onTerminalInput() { return () => {}; },
   },
 };
+let loaded;
 async function load() {
-  const loaded = await loadExtensions([extensionPath], process.cwd());
+  // Pi shuts the old session's extensions down before a reload.
+  if (loaded) for (const handler of loaded.extensions[0].handlers.get("session_shutdown") ?? []) await handler({}, ctx);
+  loaded = await loadExtensions([extensionPath], process.cwd());
   assert.deepEqual(loaded.errors, []);
   assert.equal(loaded.extensions.length, 1);
+  loaded.runtime.getThinkingLevel = () => "medium"; // bound by Pi's runner in a real session
   for (const handler of loaded.extensions[0].handlers.get("session_start") ?? []) await handler({ reason: "reload" }, ctx);
 }
 const make = (text, definition = {}) => {
@@ -76,3 +80,5 @@ for (let pass = 0; pass < 10; pass++) for (const row of rows) row.render(110);
 const perPass = (performance.now() - start) / 10;
 assert.equal(extractions, warmed, "unchanged single-line output must not be extracted again");
 console.log(`PASS Node cached repaint: 100 × 50KB outputs, ${perPass.toFixed(2)} ms/pass, zero re-extractions`);
+// End the session the way Pi does so watchers and timers stop and the process can exit.
+for (const handler of loaded.extensions[0].handlers.get("session_shutdown") ?? []) await handler({}, ctx);

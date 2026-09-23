@@ -26,7 +26,7 @@ function harness(branch: unknown[]) {
     registerCommand: (name: string, options: { handler: Function }) => (commands[name] = options.handler),
     registerShortcut() {},
     appendEntry() {},
-    registerMessageRenderer() {},
+    registerMessageRenderer() {}, exec: async () => ({ code: 1, stdout: "", stderr: "", killed: false }),
     getThinkingLevel: () => "low",
   } as any);
   const ctx: any = {
@@ -38,7 +38,7 @@ function harness(branch: unknown[]) {
       theme: themeModule.theme,
       setWidget: (_key: string, factory: any) => { if (typeof factory === "function") factory(tui, themeModule.theme); },
       setStatus() {},
-      setWorkingIndicator() {}, setWorkingMessage() {},
+      setWorkingIndicator() {}, setWorkingMessage() {}, getEditorComponent: () => undefined, setEditorComponent() {},
       notify() {},
       onTerminalInput: () => () => {},
       setToolsExpanded() {},
