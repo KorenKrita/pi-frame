@@ -32,7 +32,7 @@ This is display-only. The prompt still goes through Pi's native user-message pat
 
 ## Working loader
 
-While Pi works, the loader line shows an animated spinner, a random activity word, a shimmer, a token activity meter, the token rate, elapsed time, output tokens, and the response model when it differs from the selected one. Every element can be toggled, recolored, and reordered. Activity words come from pi-frame's own Chinese list (`loader/words.ts`) plus optional word packs (`loader/wordpacks/`, or your own in `~/.pi/agent/pi-frame/word-packs.json`).
+While Pi works, the loader line shows an animated spinner, a random activity word, a shimmer, a token activity meter, the token rate, elapsed time, output tokens, and the response model when it differs from the selected one. Every element can be toggled, recolored, and reordered. Activity words come from pi-frame's own Chinese list (`loader/words.ts`) plus optional Chinese word packs (AI 娘, 二次元, 程序员黑话, 甄嬛传 in `loader/wordpacks/`, all off by default), or your own in `~/.pi/agent/pi-frame/word-packs.json`. pi-topping's English packs are not shipped.
 
 The loader and prompt box are adapted from [pi-topping](https://github.com/underactive/pi-topping) (MIT, see `loader/LICENSE`). Unlike pi-topping, pi-frame never intercepts `input` and has no completion marker.
 

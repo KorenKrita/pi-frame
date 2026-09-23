@@ -1,0 +1,171 @@
+{
+  "packs": [
+    {
+      "id": "acg",
+      "name": "二次元",
+      "description": "中二、热血、羁绊，以及奇怪的必杀技。",
+      "words": [
+        {
+          "present_tense": "发动固有结界",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "中二病发作",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "释放封印之力",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "喊出必杀技名字",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "变身中（请勿打扰）",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "燃烧小宇宙",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "开启写轮眼",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "聚集元气弹",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "穿越到异世界",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "读取存档",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "刷新好感度",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "触发隐藏剧情",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "被命运选中",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "感受到羁绊的力量",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "在天台吃便当",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "叼着面包赶路",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "进入贤者模式",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "强行加戏",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "等待回忆杀结束",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "开启二周目",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "查看战斗力数值",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "召唤使魔",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "签订契约",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "念咒语",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "左手的封印在发烫",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "点亮技能树",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "吃下恶魔果实",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "用友情破防",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "发动时间停止",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "修复世界线",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "念出 El Psy Kongroo",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "在夕阳下奔跑",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "给主角开挂",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "抽卡保底中",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "氪金十连",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "跳过 OP",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "放大招前的长镜头",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "打出 EX 连击",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "BGM 响起",
+          "past_tense": "完成"
+        },
+        {
+          "present_tense": "等下集预告",
+          "past_tense": "完成"
+        }
+      ]
+    }
+  ]
+}

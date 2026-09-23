@@ -1,0 +1,171 @@
+{
+  "packs": [
+    {
+      "id": "zhen-huan",
+      "name": "甄嬛传",
+      "description": "后宫生存指南，臣妾做不到啊。",
+      "words": [
+        {
+          "present_tense": "臣妾做不到啊",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "赏一丈红",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "翻绿头牌",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "熬一碗安胎药",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "御花园偶遇",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "给皇上请安",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "嘉嫔娘娘驾到",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "扶一下华妃",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "细细斟酌",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "端一碗红花",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "贱人就是矫情",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "本宫乏了",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "绣一只鸳鸯",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "倚梅园许愿",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "送一盒欢宜香",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "查一查枕头里",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "打听碎玉轩动静",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "嬛嬛一梳",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "逆风如解意",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "抄写女则",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "向太后请安",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "磨墨侍笔",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "排查小允子",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "奏一曲惊鸿舞",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "拿捏分寸",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "从长计议",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "隔墙有耳",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "借刀杀人",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "静观其变",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "安排眉庄",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "开甘露寺副本",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "回宫线加载中",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "盘算位分",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "数一数翊坤宫的炭",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "端详一张画像",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "吩咐槿汐",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "让温太医把脉",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "滴血验亲",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "熹贵妃回宫",
+          "past_tense": "退下吧"
+        },
+        {
+          "present_tense": "这福气给你要不要啊",
+          "past_tense": "退下吧"
+        }
+      ]
+    }
+  ]
+}

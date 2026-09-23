@@ -1,0 +1,171 @@
+{
+  "packs": [
+    {
+      "id": "dev-slang",
+      "name": "程序员黑话",
+      "description": "拉通对齐，赋能抓手，形成闭环。",
+      "words": [
+        {
+          "present_tense": "拉通对齐",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "沉淀方法论",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "打通链路",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "形成闭环",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "找抓手",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "赋能业务",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "颗粒度对齐中",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "组合拳出击",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "倒逼改革",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "寻找差异化打法",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "梳理底层逻辑",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "构建护城河",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "复盘一下",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "拆解需求",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "向上管理",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "对一下口径",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "做个降本增效",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "搞个中台",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "打个补丁先上",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "先跑起来再说",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "技术债 +1",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "临时方案永久化",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "加个 TODO",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "注释掉看看",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "本地是好的",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "排期到下个迭代",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "需求又变了",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "在线上 debug",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "甩锅给缓存",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "怀疑是网络问题",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "清一下缓存试试",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "重启大法",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "堆机器",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "屎山上雕花",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "写个 PPT 架构",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "给老板画饼",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "打个样",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "OKR 拆解中",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "提测前夜",
+          "past_tense": "闭环了"
+        },
+        {
+          "present_tense": "上线祈福",
+          "past_tense": "闭环了"
+        }
+      ]
+    }
+  ]
+}

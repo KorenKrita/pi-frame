@@ -187,3 +187,15 @@ describe("/frame-settings pages", () => {
     expect(loader.filter((id) => prompt.includes(id))).toEqual([]);
   });
 });
+
+describe("bundled word packs", () => {
+  test("pi-frame ships its own four Chinese packs, off until enabled", () => {
+    const packs = loadBundledWordPacks();
+    expect(packs.map((pack) => pack.name).sort()).toEqual(["AI 娘", "二次元", "甄嬛传", "程序员黑话"].sort());
+    for (const pack of packs) {
+      expect(pack.words.length).toBe(40);
+      expect(pack.words.every((w) => /[\u4e00-\u9fff]/.test(w.present_tense))).toBe(true);
+      expect(DEFAULT_SETTINGS.wordPacks[pack.id]).toBeUndefined();
+    }
+  });
+});

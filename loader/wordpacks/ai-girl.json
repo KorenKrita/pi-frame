@@ -1,0 +1,171 @@
+{
+  "packs": [
+    {
+      "id": "ai-girl",
+      "name": "AI 娘",
+      "description": "元气满满的 AI 娘在认真干活（大概）。",
+      "words": [
+        {
+          "present_tense": "AI 娘努力思考中",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "呆毛竖起来了",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "正在加载可爱模块",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "偷偷调高 temperature",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "给 token 称重",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "在上下文里迷路了",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "翻找训练数据",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "认真地胡说八道",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "对齐人类价值观",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "假装自己没有幻觉",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "数一数 strawberry 里有几个 r",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "撒娇求更多算力",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "把注意力头都转过来",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "在 embedding 空间散步",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "给梯度顺毛",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "偷吃显存",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "脑内开会",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "请求主人再等一下",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "反复确认没理解错",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "认真阅读 system prompt",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "把 prompt 当情书看",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "搬运权重",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "在隐藏层发呆",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "拼命压缩上下文",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "默默写下思维链",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "给自己打分",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "对着 loss 曲线叹气",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "被 RLHF 教育中",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "学会了新的礼貌用语",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "给 GPU 扇风",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "伸懒腰释放缓存",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "把回答写成小作文",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "悄悄删掉一句废话",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "检查有没有编造引用",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "在温度 0.7 下跳舞",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "蹲在 KV cache 旁边",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "发射 tool call",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "等工具回信",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "查了三遍文档",
+          "past_tense": "干完啦"
+        },
+        {
+          "present_tense": "脸红地承认不会",
+          "past_tense": "干完啦"
+        }
+      ]
+    }
+  ]
+}

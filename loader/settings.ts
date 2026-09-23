@@ -329,8 +329,7 @@ export function applyMenuResult(settings: DecoratorSettings, values: Record<stri
  * don't resurface on re-enable.
  * Files with `schemaVersion` below 2 get spinner color reset to `thinking-level` and
  * `borderAccent` prompt borders moved to `thinking-level`; below 3, the completion-marker
- * border color is reset. A legacy `features.simCityWorkingText: true` enables the
- * `simcity` pack when no explicit preference is stored.
+ * border color is reset.
  */
 export function loadSettings(): DecoratorSettings {
 	try {
@@ -349,9 +348,6 @@ export function loadSettings(): DecoratorSettings {
 			for (const [id, enabled] of Object.entries(parsed.wordPacks)) {
 				if (isWordPackId(id) && typeof enabled === "boolean") wordPacks[id] = enabled;
 			}
-		}
-		if (isPlainObject(parsed.features) && parsed.features.simCityWorkingText === true && !("simcity" in wordPacks)) {
-			wordPacks.simcity = true;
 		}
 		const settings = { decorations: mergeGroup(DEFAULT_SETTINGS.decorations, parsed.decorations), features: mergeGroup(DEFAULT_SETTINGS.features, parsed.features), loaderOrder: parseLoaderOrder(parsed.loaderOrder), wordPacks };
 		const schemaVersion = typeof parsed.schemaVersion === "number" ? parsed.schemaVersion : 1;
