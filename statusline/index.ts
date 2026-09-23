@@ -140,11 +140,16 @@ export function installStatusline(pi: ExtensionAPI) {
 
 	const MIN_BOXED_WIDTH = 12;
 
+	/** Where the inner editor's rows ended up in the last boxed render; undefined when it rendered unboxed. */
+	type BoxGeometry = { innerWidth: number; innerHeight: number; bottomIdx: number; bottomShown: boolean };
+
 	const renderBoxed = (
 		innerRender: (width: number) => string[],
 		width: number,
 		editor: { borderColor?: (str: string) => string },
+		layout: { geometry?: BoxGeometry },
 	): string[] => {
+		layout.geometry = undefined;
 		const ctx = activeCtx;
 		if (!ctx || width < MIN_BOXED_WIDTH) return innerRender(width);
 
@@ -216,10 +221,12 @@ export function installStatusline(pi: ExtensionAPI) {
 			},
 			{ col: 3, row: bottomIdx },
 		);
-		out.push(...renderBoxRowIfVisible(painters, bottomBar, bottomIdx, width, box.bottomLeft, box.bottomRight));
+		const bottomRows = renderBoxRowIfVisible(painters, bottomBar, bottomIdx, width, box.bottomLeft, box.bottomRight);
+		out.push(...bottomRows);
 		for (let i = bottomIdx + 1; i < lines.length; i++) {
 			out.push(`  ${lines[i]}`);
 		}
+		layout.geometry = { innerWidth, innerHeight: lines.length, bottomIdx, bottomShown: bottomRows.length > 0 };
 		return out;
 	};
 
@@ -254,11 +261,13 @@ export function installStatusline(pi: ExtensionAPI) {
 				editor = own;
 			}
 			const innerRender = editor.render.bind(editor);
+			const layout: { geometry?: BoxGeometry } = {};
 			let boxRenderFailed = false;
 			editor.render = width => {
+				layout.geometry = undefined;
 				if (boxRenderFailed) return innerRender(width);
 				try {
-					return renderBoxed(innerRender, width, editor);
+					return renderBoxed(innerRender, width, editor, layout);
 				} catch (err) {
 					if (!boxRenderFailed) {
 						boxRenderFailed = true;
@@ -270,6 +279,20 @@ export function installStatusline(pi: ExtensionAPI) {
 					return innerRender(width);
 				}
 			};
+			// The box adds a spacer row, puts inner row 0 on the top bar, and indents content two
+			// columns; translate clicks back so cursor placement and autocomplete hits line up.
+			const innerMouse = editor.handleMouse?.bind(editor);
+			if (innerMouse) {
+				editor.handleMouse = event => {
+					const g = layout.geometry;
+					if (!g) return innerMouse(event);
+					if (event.y < 1) return undefined;
+					// Every row below the spacer is one row lower than inside the editor, except
+					// autocomplete rows when the bottom border was dropped.
+					const y = !g.bottomShown && event.y > g.bottomIdx ? event.y : event.y - 1;
+					return innerMouse({ ...event, x: Math.max(0, event.x - 2), y, width: g.innerWidth, height: g.innerHeight });
+				};
+			}
 			return editor;
 		};
 	};
