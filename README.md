@@ -22,7 +22,7 @@ Rendering does not change tool schemas, execution, stored arguments, or results,
 
 ## Settings: `/frame-settings`
 
-First pick a page (prompt box, working loader, or statusline); each opens a settings menu (Chinese UI) with a live preview and applies on ⏎. Settings persist to `~/.pi/agent/pi-frame/prompt-loader.json` and `~/.pi/agent/pi-frame/statusline.json`. On first run, existing `~/.pi/agent/pi-topping/settings.json` and `~/.pi/agent/pi-topping-statusline/settings.json` are used as the starting point.
+First pick a page (prompt box, working loader, statusline, or tool display); each opens a settings menu (Chinese UI) with a live preview and applies on ⏎. Settings persist to `~/.pi/agent/pi-frame/prompt-loader.json` and `~/.pi/agent/pi-frame/statusline.json`; tool display is stored in the session, like `Ctrl+O`. On first run, existing `~/.pi/agent/pi-topping/settings.json` and `~/.pi/agent/pi-topping-statusline/settings.json` are used as the starting point.
 
 ## User prompt box
 
@@ -45,8 +45,8 @@ Ported from [pi-topping-statusline](https://github.com/underactive/pi-topping-st
 ## Controls
 
 - `Ctrl+O`: cycle the global tool mode. In fullscreen mode the current reading row stays anchored; a viewport already following the bottom continues following it.
-- `/frame 1-line`, `/frame preview`, `/frame native`: select a tool mode directly.
-- `Ctrl+Shift+O` or `/frame fold`: fold/unfold settled tool activity and intermediate prose.
+- `/frame-settings` → 工具显示: select a tool mode (1-line, preview, native) and fold state directly.
+- `Ctrl+Shift+O`: fold/unfold settled tool activity and intermediate prose.
 - `Ctrl+T`: Pi's native thinking toggle.
 - `/cp`: toggle copy mode, removing frame side bars so terminal text selection does not copy them.
 - In `1-line`, click the **tool name** to open only that tool's Input and Output preview. Click its title name again to close it. Pending tools can be opened to inspect their Input too.

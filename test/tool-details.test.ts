@@ -63,6 +63,17 @@ function harness(factory = piFrame) {
     chat,
     press: () => listeners.forEach((listener) => listener("\x0f")),
     command: (name: string, arg = "") => commands[name]!(arg, ctx),
+    /** Pick the tool page in /frame-settings and apply these values, as a user would. */
+    toolSettings: (values: { toolMode: string; fold?: boolean }) => {
+      let offered: Record<string, unknown> | undefined;
+      ctx.ui.select = async (_title: string, options: string[]) => options.find((option) => option === "工具显示");
+      ctx.ui.custom = async (factory: Function) => {
+        const menu = factory(tui, themeModule.theme, undefined, () => {});
+        offered = { ...menu.values };
+        return { applied: true, values: { toolMode: values.toolMode, fold: values.fold ?? false } };
+      };
+      return commands["frame-settings"]!("", ctx).then(() => offered);
+    },
     shortcut: (name: string) => shortcuts[name]!(ctx),
     add(name: string, args: unknown, definition: Definition = {}, result?: Result) {
       // A registered extension without renderers is NOT the same branch as an unknown tool.
@@ -316,14 +327,14 @@ describe("complete tool input and output", () => {
 
   test("same-mode commands preserve native per-row mouse overrides", async () => {
     const row = h.add("notes", {}, {}, result(`${"line\n".repeat(15)}LOCAL_OVERRIDE_TAIL`));
-    await h.command("frame", "native");
+    await h.toolSettings({ toolMode: "native" });
     const rendered = lines(row);
     const y = rendered.findIndex((line) => line.includes("Output"));
     row.handleMouse({ type: "click", button: "left", x: 2, y, screenX: 22, screenY: y + 30, width: 110, height: rendered.length, shift: false, alt: false, ctrl: false });
-    await h.command("frame", "native");
+    await h.toolSettings({ toolMode: "native" });
     expect(show(row)).not.toContain("LOCAL_OVERRIDE_TAIL");
-    await h.command("frame", "preview");
-    await h.command("frame", "native");
+    await h.toolSettings({ toolMode: "preview" });
+    await h.toolSettings({ toolMode: "native" });
     expect(show(row)).toContain("LOCAL_OVERRIDE_TAIL");
   });
 
@@ -362,7 +373,7 @@ describe("complete tool input and output", () => {
     };
     click("notes");
     click("Output");
-    await h.command("frame", "1-line");
+    await h.toolSettings({ toolMode: "oneLine" });
     expect(show(row)).toContain("LOCAL_OVERRIDE_END");
     h.press(); // oneLine -> preview is still false in Pi's two-state global toggle.
     expect(show(row)).toContain("Input");
@@ -501,5 +512,12 @@ describe("complete tool input and output", () => {
     } finally {
       await h.command("cp");
     }
+  });
+
+  test("the tool page of /frame-settings shows the current modes and persists changes to the session", async () => {
+    const offered = await h.toolSettings({ toolMode: "preview", fold: true });
+    expect(offered).toMatchObject({ toolMode: "oneLine", fold: false });
+    expect(h.entries.at(-1)).toEqual({ type: "pi-frame-config", data: { toolMode: "preview", foldMode: "compact" } });
+    expect(await h.toolSettings({ toolMode: "preview" })).toMatchObject({ toolMode: "preview", fold: true });
   });
 });

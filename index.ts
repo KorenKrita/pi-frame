@@ -16,6 +16,7 @@ import {
   ToolExecutionComponent,
   UserMessageComponent,
   type ExtensionAPI,
+  type ExtensionCommandContext,
   type ExtensionContext,
   type Theme,
 } from "@earendil-works/pi-coding-agent";
@@ -32,12 +33,19 @@ import { BORDER_GLYPHS } from "./loader/prompt-decorator.ts";
 import { SessionManager as LoaderSession } from "./loader/session.ts";
 import { installStatusline } from "./statusline/index.ts";
 import type { DecoratorSettings } from "./loader/settings.ts";
+import { showMenu, type MenuValue } from "./loader/menu.ts";
 
 // ─── State (global so a reloaded module replaces state instead of re-wrapping prototypes) ────
 
 type ToolMode = "oneLine" | "preview" | "native";
 const TOOL_MODES: ToolMode[] = ["oneLine", "preview", "native"];
 const TOOL_MODE_LABEL: Record<ToolMode, string> = { oneLine: "1-line", preview: "preview", native: "native" };
+const TOOL_MODE_NAME: Record<ToolMode, string> = { oneLine: "单行", preview: "预览", native: "原生" };
+const TOOL_MODE_HELP: Record<ToolMode, string> = {
+  oneLine: "每个工具一行；点工具名单独展开它的输入和输出",
+  preview: "显示工具的输入和输出开头",
+  native: "Pi 原生的完整工具视图",
+};
 
 const CONFIG_ENTRY_TYPE = "pi-frame-config";
 const STATUS_KEY = "pi-frame";
@@ -695,10 +703,11 @@ export default function piFrame(pi: ExtensionAPI): void {
   const statusline = installStatusline(pi);
 
   pi.registerCommand("frame-settings", {
-    description: "pi-frame 设置：输入框、加载动画、状态栏",
+    description: "pi-frame 设置：输入框、加载动画、状态栏、工具显示",
     handler: async (_args, ctx) => {
-      const page = await ctx.ui.select("pi-frame 设置", ["输入框", "加载动画", "状态栏"]);
-      if (page === "输入框") await loader.showSettings(ctx, "prompt");
+      const page = await ctx.ui.select("pi-frame 设置", ["输入框", "加载动画", "状态栏", "工具显示"]);
+      if (page === "工具显示") await openToolSettings(ctx);
+      else if (page === "输入框") await loader.showSettings(ctx, "prompt");
       else if (page === "加载动画") await loader.showSettings(ctx, "loader");
       else if (page === "状态栏") await statusline.openSettings(ctx);
       S().tui?.requestRender();
@@ -736,6 +745,37 @@ export default function piFrame(pi: ExtensionAPI): void {
       updateStatus(ctx);
       state.tui?.requestRender();
     });
+  };
+
+  /** The tool page of /frame-settings. Like Ctrl+O and Ctrl+Shift+O, it applies to the current session. */
+  const openToolSettings = async (ctx: ExtensionCommandContext): Promise<void> => {
+    const state = S();
+    const result = await showMenu<Record<string, MenuValue>>(ctx, {
+      title: "pi-frame 设置 · 工具显示",
+      sections: [{
+        title: "工具显示（当前会话）",
+        items: [
+          { id: "toolMode", label: "工具输出", value: state.toolMode, cycleValues: TOOL_MODES, cycleValueLabels: TOOL_MODE_NAME },
+          { id: "fold", label: "折叠已完成的回合", value: state.foldMode === "compact" },
+        ],
+      }],
+      hints: ["↑↓ 移动", "←→ 切换选项", "␣ 开关", "⏎ 应用", "esc 取消"],
+      preview: (values) => ({
+        lines: [
+          `工具输出：${TOOL_MODE_HELP[values.toolMode as ToolMode] ?? ""}`,
+          `折叠：${values.fold === true ? "已完成的回合只留一行摘要" : "全部展开"}`,
+          "",
+          "快捷键：Ctrl+O 轮换工具输出，Ctrl+Shift+O 切换折叠",
+        ],
+      }),
+    });
+    if (!result.applied) return;
+    const mode = result.values.toolMode as ToolMode;
+    if (TOOL_MODES.includes(mode)) applyToolMode(ctx, mode);
+    state.foldMode = result.values.fold === true ? "compact" : "expanded";
+    persist();
+    updateStatus(ctx);
+    state.tui?.requestRender();
   };
 
   const restoreConfig = (ctx: ExtensionContext): void => {
@@ -811,26 +851,6 @@ export default function piFrame(pi: ExtensionAPI): void {
       state.frameStyle = state.frameStyle === "rules" ? "boxed" : "rules";
       updateStatus(ctx);
       state.tui?.requestRender();
-    },
-  });
-
-  pi.registerCommand("frame", {
-    description: "pi-frame: set tool display (1-line | preview | native) or toggle fold",
-    handler: async (args, ctx) => {
-      const arg = (args ?? "").trim();
-      if (arg === "fold") {
-        S().foldMode = S().foldMode === "compact" ? "expanded" : "compact";
-      } else if (arg === "1-line" || arg === "oneLine") {
-        applyToolMode(ctx, "oneLine");
-      } else if (arg === "preview" || arg === "native") {
-        applyToolMode(ctx, arg);
-      } else {
-        ctx.ui.notify("Usage: /frame 1-line | preview | native | fold", "info");
-        return;
-      }
-      persist();
-      updateStatus(ctx);
-      S().tui?.requestRender();
     },
   });
 }
