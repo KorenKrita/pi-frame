@@ -78,7 +78,9 @@ export function sanitizeFeeds(raw: unknown): StatusLineFeed[] {
 
 function loadSettings(): StatusLineSettings {
 	try {
-		const raw = JSON.parse(fs.readFileSync(fs.existsSync(settingsPath()) ? settingsPath() : legacySettingsPath(), "utf8")) as StatusLineSettings;
+		// pi-topping-statusline's file only seeds a missing pi-frame file; the seed is written below so it is read once.
+		const legacy = !fs.existsSync(settingsPath());
+		const raw = JSON.parse(fs.readFileSync(legacy ? legacySettingsPath() : settingsPath(), "utf8")) as StatusLineSettings;
 		const settings: StatusLineSettings = {};
 		if (typeof raw.transparent === "boolean") settings.transparent = raw.transparent;
 		if (raw.separator && SEPARATORS.includes(raw.separator)) settings.separator = raw.separator;
@@ -97,6 +99,13 @@ function loadSettings(): StatusLineSettings {
 		if (typeof raw.nvidiaGreenBorder === "boolean") settings.nvidiaGreenBorder = raw.nvidiaGreenBorder;
 		if (typeof raw.nvidiaGreenAnimation === "boolean") settings.nvidiaGreenAnimation = raw.nvidiaGreenAnimation;
 		if (typeof raw.embedWorkingStatus === "boolean") settings.embedWorkingStatus = raw.embedWorkingStatus;
+		if (legacy) {
+			try {
+				saveSettings(settings);
+			} catch {
+				// Unwritable agent dir: keep using the imported values for this run.
+			}
+		}
 		return settings;
 	} catch {
 		// Missing or corrupt settings.json falls back to defaults.

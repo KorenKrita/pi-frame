@@ -37,4 +37,19 @@ describe("statusline settings", () => {
     expect(createSettingsState().settings).toEqual({});
     expect(existsSync(ownFile())).toBe(false);
   });
+
+  test("the import happens once: later edits to the old file no longer leak in", () => {
+    write(legacyFile(), { borderStyle: "heavy" });
+    expect(createSettingsState().settings.borderStyle).toBe("heavy");
+    write(legacyFile(), { borderStyle: "single" });
+    expect(createSettingsState().settings.borderStyle).toBe("heavy");
+  });
+
+  test("a corrupt pi-frame file falls back to defaults, not to the old file", () => {
+    write(legacyFile(), { borderStyle: "heavy" });
+    mkdirSync(dirname(ownFile()), { recursive: true });
+    writeFileSync(ownFile(), "{not json");
+    expect(createSettingsState().settings).toEqual({});
+  });
 });
+

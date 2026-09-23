@@ -156,6 +156,15 @@ describe("prompt box settings (/frame-settings)", () => {
     expect(plain(h.chat, 40).join("\n")).not.toContain("╔");
   });
 
+  test("pi-topping settings are imported once: later edits to its file no longer leak in", () => {
+    write(legacyFile(), { schemaVersion: 3, decorations: { borderStyle: "rounded", useNerdFont: false } });
+    harness([]);
+    write(legacyFile(), { schemaVersion: 3, decorations: { borderStyle: "heavy", useNerdFont: false } });
+    const h = harness([userEntry("u1", "again")]);
+    h.chat.addChild(new UserMessageComponent("again"));
+    expect(plain(h.chat, 40)[0]).toStartWith("╭── π ");
+  });
+
   test("pi-topping settings are imported, but its prompt-interception switch is not", () => {
     // decorateUserPrompt=false was how users kept prompts native under pi-topping; here it would only hide the box.
     write(legacyFile(), { schemaVersion: 3, decorations: { decorateUserPrompt: false, borderStyle: "rounded", useNerdFont: false } });

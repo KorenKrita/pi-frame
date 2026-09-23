@@ -1,5 +1,5 @@
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
-import { mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DEFAULT_LOADER_ORDER, type LoaderElement } from "./format.ts";
 import type { MenuSection } from "./menu.ts";
@@ -333,14 +333,9 @@ export function applyMenuResult(settings: DecoratorSettings, values: Record<stri
  */
 export function loadSettings(): DecoratorSettings {
 	try {
-		let legacy = false;
-		let raw: string;
-		try {
-			raw = readFileSync(settingsPath(), "utf8");
-		} catch {
-			raw = readFileSync(legacySettingsPath(), "utf8");
-			legacy = true;
-		}
+		// pi-topping's file only seeds a missing pi-frame file; the seed is written below so it is read once.
+		const legacy = !existsSync(settingsPath());
+		const raw = readFileSync(legacy ? legacySettingsPath() : settingsPath(), "utf8");
 		const parsed = JSON.parse(raw);
 		if (!isPlainObject(parsed)) return structuredClone(DEFAULT_SETTINGS);
 		const wordPacks: Record<string, boolean> = { ...DEFAULT_SETTINGS.wordPacks };
@@ -364,6 +359,13 @@ export function loadSettings(): DecoratorSettings {
 		for (const entry of MENU_ENTRIES) {
 			if (entry.group === "decorations" && entry.cycleEnabledBy && entry.cycleDisabledValue !== undefined && !settings.decorations[entry.cycleEnabledBy]) {
 				setDecorationCycleValue(settings.decorations, entry.key, entry.cycleDisabledValue);
+			}
+		}
+		if (legacy) {
+			try {
+				saveSettings(settings);
+			} catch {
+				// Unwritable agent dir: keep using the imported values for this run.
 			}
 		}
 		return settings;
