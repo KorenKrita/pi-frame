@@ -14,6 +14,7 @@ import {
   BashExecutionComponent,
   CustomMessageComponent,
   ToolExecutionComponent,
+  UserMessageComponent,
   type ExtensionAPI,
   type ExtensionContext,
   type Theme,
@@ -22,7 +23,7 @@ import { Container, Markdown, MouseRegion, Spacer, Text, getCapabilities, isKeyR
 import { homedir } from "node:os";
 
 import { assistantRendersNothing, captureTui, findChatContainer, isAssistantRow, isToolRow, type ContainerLike, type Renderable, type TuiLike } from "./chat.ts";
-import { DOTTED, frame, frameOverhead, MIN_FRAME_WIDTH, ROUNDED_DASHED, rule, SQUARE, trimBlankEdges, type FrameStyle } from "./frame.ts";
+import { DOTTED, fitLine, frame, frameOverhead, MIN_FRAME_WIDTH, ROUNDED_DASHED, rule, SQUARE, trimBlankEdges, type FrameStyle } from "./frame.ts";
 import { formatTokens, toolLine, type ToolStatus } from "./tool-line.ts";
 import { computeFoldPlan, EMPTY_PLAN, formatSummary, type FoldPlan, type TurnFoldMode } from "./turn-fold.ts";
 import { withTranscriptAnchor } from "./viewport.ts";
@@ -59,6 +60,11 @@ interface State {
   tui: TuiLike | undefined;
   cwd: string;
   home: string;
+  /** User prompt box metadata (sent time, model, thinking level), matched from session entries. */
+  userMeta: WeakMap<object, UserMeta>;
+  userMetaKey: string;
+  branch: (() => readonly unknown[]) | undefined;
+  liveThinking: (() => ThinkingLevel) | undefined;
 }
 
 interface Globals {
@@ -70,6 +76,7 @@ interface Globals {
     assistantUpdateContent: (this: AssistantMessageComponent, ...args: unknown[]) => void;
     customMessageRender: (this: CustomMessageComponent, width: number) => string[];
     bashExecutionRender: (this: BashExecutionComponent, width: number) => string[];
+    userMessageRender?: (this: UserMessageComponent, width: number) => string[];
   };
   /** Re-pointed on every module evaluation so a /reload swaps in the new code. */
   hooks: { recomputePlan: (chat: ContainerLike) => void };
@@ -92,6 +99,10 @@ function freshState(): State {
     tui: undefined,
     cwd: process.cwd(),
     home: homedir(),
+    userMeta: new WeakMap(),
+    userMetaKey: "",
+    branch: undefined,
+    liveThinking: undefined,
   };
 }
 
@@ -109,6 +120,7 @@ const globals: Globals = g[GLOBAL_KEY] ?? {
 g[GLOBAL_KEY] = globals;
 // Older pi-frame instances do not have this slot yet; preserve the native method across /reload.
 globals.originals.toolHandleMouse ??= ToolExecutionComponent.prototype.handleMouse;
+globals.originals.userMessageRender ??= UserMessageComponent.prototype.render;
 globals.state = freshState();
 globals.hooks.recomputePlan = (chat) => recomputePlan(chat);
 const S = () => globals.state;
@@ -117,6 +129,12 @@ const S = () => globals.state;
 
 type Paint = (text: string) => string;
 type FgColor = Parameters<Theme["fg"]>[0];
+type ThinkingLevel = Parameters<Theme["getThinkingBorderColor"]>[0];
+interface UserMeta {
+  at?: number;
+  model?: string;
+  thinking?: ThinkingLevel;
+}
 
 function fg(color: FgColor): Paint {
   const theme = S().theme;
@@ -487,6 +505,91 @@ function patchedBashExecutionRender(this: BashExecutionComponent, width: number)
   return renderFoldSummary(this) ?? globals.originals.bashExecutionRender.call(this, width);
 }
 
+// ─── User prompt box: display-only, the prompt still travels Pi's native user-message path ──
+
+const DOUBLE = { tl: "╔", tr: "╗", bl: "╚", br: "╝", h: "═", v: "║" };
+const OSC133_START = "\x1b]133;A\x07";
+const OSC133_END = "\x1b]133;B\x07\x1b]133;C\x07";
+
+function userEntryText(message: { content?: unknown }): string {
+  const c = message.content;
+  if (typeof c === "string") return c;
+  if (!Array.isArray(c)) return "";
+  return c.filter((b) => b?.type === "text").map((b) => b.text).join("");
+}
+
+/** Pair user rows with branch user entries in order; each gets its send time and the model/thinking level then in effect. */
+function syncUserMeta(chat: ContainerLike): void {
+  const state = S();
+  if (!state.branch || !chat.children.some((r) => r instanceof UserMessageComponent && !state.userMeta.has(r))) return;
+  let branch: readonly any[];
+  try {
+    branch = state.branch();
+  } catch {
+    return; // stale ctx after session replacement; the next session_start rebinds
+  }
+  // A user entry is appended after its row is first drawn; rescan only when the branch changes.
+  const key = `${branch.length}:${branch.at(-1)?.id ?? ""}`;
+  if (key === state.userMetaKey) return;
+  state.userMetaKey = key;
+  const metas: { text: string; meta: UserMeta }[] = [];
+  let model: string | undefined;
+  let thinking: ThinkingLevel | undefined;
+  for (const e of branch) {
+    if (e?.type === "model_change") model = e.modelId;
+    else if (e?.type === "thinking_level_change") thinking = e.thinkingLevel;
+    else if (e?.type === "message" && e.message?.role === "user") {
+      metas.push({ text: userEntryText(e.message), meta: { at: e.message.timestamp ?? Date.parse(e.timestamp), model, thinking } });
+    }
+  }
+  let next = 0;
+  for (const row of chat.children) {
+    if (!(row instanceof UserMessageComponent)) continue;
+    const text = (row as unknown as { text: string }).text;
+    let i = next;
+    while (i < metas.length && metas[i]!.text !== text) i++;
+    if (i === metas.length) continue;
+    next = i + 1;
+    if (!state.userMeta.has(row)) state.userMeta.set(row, metas[i]!.meta);
+  }
+}
+
+function patchedUserMessageRender(this: UserMessageComponent, width: number): string[] {
+  const state = S();
+  const theme = state.theme;
+  // UserMessageComponent → Box (userMessageBg) → Markdown. Render the Markdown alone: the frame replaces the background band.
+  const body = (this as unknown as { children: { children?: Renderable[] }[] }).children[0]?.children?.[0];
+  if (!theme || !body || width < MIN_FRAME_WIDTH) return globals.originals.userMessageRender!.call(this, width);
+
+  const meta = state.userMeta.get(this) ?? {};
+  const level = meta.thinking ?? state.liveThinking?.();
+  const border: Paint = level ? theme.getThinkingBorderColor(level) : fg("border");
+  const dim = fg("dim");
+  const inner = width - 2;
+  const time = meta.at
+    ? new Date(meta.at).toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    : "";
+  const iconSeg = `${border(`${DOUBLE.h}${DOUBLE.h} `)}${fg("text")("π")}${border(" ")}`; // 5 cols
+  const timeSeg = time ? `${border(" ")}${dim(time)}${border(` ${DOUBLE.h}`)}` : "";
+  const timeWidth = time ? time.length + 3 : 0;
+  const top = border(DOUBLE.tl) + iconSeg + border(DOUBLE.h.repeat(Math.max(0, inner - 5 - timeWidth))) + timeSeg + border(DOUBLE.tr);
+  const model = meta.model ? truncateToWidth(meta.model, Math.max(0, inner - 3), "…").replace(/\x1b\[0m/g, "") : "";
+  const modelWidth = model ? visibleWidth(model) + 3 : 0;
+  const modelSeg = model ? `${border(" ")}${dim(model)}${border(` ${DOUBLE.h}`)}` : "";
+  const bottom = border(DOUBLE.bl) + border(DOUBLE.h.repeat(Math.max(0, inner - modelWidth))) + modelSeg + border(DOUBLE.br);
+
+  // Copy mode (/cp) keeps the top and bottom rules but drops side bars so selections stay clean.
+  const boxed = state.frameStyle === "boxed";
+  const textWidth = boxed ? width - 4 : width;
+  const lines = trimBlankEdges(body.render(textWidth)).map((line) =>
+    boxed ? `${border(DOUBLE.v)} ${fitLine(line, textWidth)} ${border(DOUBLE.v)}` : line,
+  );
+  const out = [top, ...lines, bottom].map((line) => (visibleWidth(line) > width ? truncateToWidth(line, width) : line));
+  out[0] = OSC133_START + out[0];
+  out[out.length - 1] = OSC133_END + out[out.length - 1];
+  return out;
+}
+
 function patchedAssistantUpdateContent(this: AssistantMessageComponent, ...args: unknown[]): void {
   globals.originals.assistantUpdateContent.apply(this, args);
   const c = this as unknown as { contentContainer: Container; hiddenThinkingLabel: string };
@@ -508,6 +611,7 @@ function installPrototypePatches(): void {
   AssistantMessageComponent.prototype.updateContent = patchedAssistantUpdateContent as typeof AssistantMessageComponent.prototype.updateContent;
   CustomMessageComponent.prototype.render = patchedCustomMessageRender;
   BashExecutionComponent.prototype.render = patchedBashExecutionRender;
+  UserMessageComponent.prototype.render = patchedUserMessageRender;
 }
 
 // ─── Chat container hook: per-frame plan (fold + tight spacing), O(rows) ────────────────────
@@ -535,6 +639,7 @@ function pruneNativeStatusRows(chat: ContainerLike): void {
 function recomputePlan(chat: ContainerLike): void {
   const state = S();
   pruneNativeStatusRows(chat);
+  syncUserMeta(chat);
   state.fold = state.foldMode === "compact" ? computeFoldPlan(chat, state.streaming) : EMPTY_PLAN;
   const tight = new WeakSet<object>();
   let prevIsTool = false;
@@ -615,6 +720,9 @@ export default function piFrame(pi: ExtensionAPI): void {
     const state = S();
     state.theme = ctx.ui.theme;
     state.cwd = ctx.cwd;
+    state.branch = () => ctx.sessionManager.getBranch();
+    state.liveThinking = () => pi.getThinkingLevel();
+    state.userMetaKey = "";
     const tui = captureTui(ctx.ui, CAPTURE_KEY);
     if (tui) {
       state.tui = tui;

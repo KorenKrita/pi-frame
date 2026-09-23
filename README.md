@@ -20,6 +20,12 @@ The frame title retains Pi's display-text token estimate (including image placeh
 
 Rendering does not change tool schemas, execution, stored arguments, or results, and does not append copies of input to model context.
 
+## User prompt box
+
+User messages render in a double border: `π` top-left, the send time top-right, and the model in effect when the prompt was sent bottom-right. The border takes that prompt's thinking-level color. Time, model, and thinking level come from the session branch (`message`, `model_change`, `thinking_level_change` entries), so resumed sessions keep their original labels. For the brief moment before a new prompt's entry is saved, the box has no labels and uses the current thinking level.
+
+This is display-only. The prompt still goes through Pi's native user-message path, so `before_agent_start` and extensions that read user messages (memory plugins, for example) are unaffected. Copy mode drops the side bars; widths under 16 columns fall back to Pi's native rendering.
+
 ## Controls
 
 - `Ctrl+O`: cycle the global tool mode. In fullscreen mode the current reading row stays anchored; a viewport already following the bottom continues following it.
