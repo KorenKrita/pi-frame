@@ -50,6 +50,7 @@ function harness() {
   piFrame({
     on: (name: string, handler: Function) => (handlers[name] ??= []).push(handler),
     registerCommand() {}, registerShortcut() {}, appendEntry() {},
+    registerMessageRenderer() {}, getThinkingLevel: () => "medium",
   } as any);
   let expanded = false;
   const ctx: any = {
@@ -59,6 +60,7 @@ function harness() {
       theme: themeModule.theme,
       setWidget: (_key: string, factory: any) => { if (typeof factory === "function") factory(reference); },
       setStatus() {},
+      setWorkingIndicator() {}, setWorkingMessage() {},
       onTerminalInput: (listener: any) => tui.addInputListener(listener),
       setToolsExpanded(value: boolean) {
         if (expanded === value) return;

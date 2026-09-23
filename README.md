@@ -20,11 +20,21 @@ The frame title retains Pi's display-text token estimate (including image placeh
 
 Rendering does not change tool schemas, execution, stored arguments, or results, and does not append copies of input to model context.
 
+## Settings: `/frame-settings`
+
+Opens a settings menu (Chinese UI) with a live preview. Settings persist to `~/.pi/agent/pi-frame/prompt-loader.json` and apply on ⏎. On first run, an existing `~/.pi/agent/pi-topping/settings.json` is used as the starting point.
+
 ## User prompt box
 
-User messages render in a double border: `π` top-left, the send time top-right, and the model in effect when the prompt was sent bottom-right. The border takes that prompt's thinking-level color. Time, model, and thinking level come from the session branch (`message`, `model_change`, `thinking_level_change` entries), so resumed sessions keep their original labels. For the brief moment before a new prompt's entry is saved, the box has no labels and uses the current thinking level.
+User messages render in a bordered box: icon top-left, send time top-right, provider/model bottom-right. Border style (double/single/rounded/heavy), border color (thinking level or a theme color), and each label are configurable. Time, model, and thinking level come from the session branch (`message`, `model_change`, `thinking_level_change` entries), so resumed sessions keep their original labels. For the brief moment before a new prompt's entry is saved, the box has no labels and uses the current thinking level.
 
-This is display-only. The prompt still goes through Pi's native user-message path, so `before_agent_start` and extensions that read user messages (memory plugins, for example) are unaffected. Copy mode drops the side bars; widths under 16 columns fall back to Pi's native rendering.
+This is display-only. The prompt still goes through Pi's native user-message path, so `before_agent_start` and extensions that read user messages (memory plugins, for example) are unaffected. Copy mode drops the side bars; widths under 16 columns fall back to Pi's native rendering. Prompt boxes recorded by pi-topping (`pi-topping-prompt` messages) still render in old sessions.
+
+## Working loader
+
+While Pi works, the loader line shows an animated spinner, a random activity word, a shimmer, a token activity meter, the token rate, elapsed time, output tokens, and the response model when it differs from the selected one. Every element can be toggled, recolored, and reordered. Activity words come from pi-frame's own Chinese list (`loader/words.ts`) plus optional word packs (`loader/wordpacks/`, or your own in `~/.pi/agent/pi-frame/word-packs.json`).
+
+The loader and prompt box are adapted from [pi-topping](https://github.com/underactive/pi-topping) (MIT, see `loader/LICENSE`). Unlike pi-topping, pi-frame never intercepts `input` and has no completion marker.
 
 ## Controls
 

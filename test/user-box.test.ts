@@ -1,4 +1,7 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { WORDS } from "../loader/words.ts";
 import { UserMessageComponent, initTheme } from "@earendil-works/pi-coding-agent";
 import { Container, stripTerminalSequences, visibleWidth } from "@earendil-works/pi-tui";
 import * as themeModule from "/Users/korenkrita/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/dist/modes/interactive/theme/theme.js";
@@ -23,6 +26,7 @@ function harness(branch: unknown[]) {
     registerCommand: (name: string, options: { handler: Function }) => (commands[name] = options.handler),
     registerShortcut() {},
     appendEntry() {},
+    registerMessageRenderer() {},
     getThinkingLevel: () => "low",
   } as any);
   const ctx: any = {
@@ -34,6 +38,7 @@ function harness(branch: unknown[]) {
       theme: themeModule.theme,
       setWidget: (_key: string, factory: any) => { if (typeof factory === "function") factory(tui, themeModule.theme); },
       setStatus() {},
+      setWorkingIndicator() {}, setWorkingMessage() {},
       notify() {},
       onTerminalInput: () => () => {},
       setToolsExpanded() {},
@@ -53,7 +58,7 @@ const userEntry = (id: string, text: string, timestamp = SENT) => ({
 const plain = (chat: Container, width: number) => chat.render(width).map(stripTerminalSequences);
 
 describe("user prompt box", () => {
-  test("frames a native user message with π, send time and the model then in effect", () => {
+  test("frames a native user message with the π icon, send time and the model then in effect", () => {
     const h = harness([
       { type: "model_change", id: "m1", timestamp: "", provider: "p", modelId: "old-model" },
       { type: "thinking_level_change", id: "t1", timestamp: "", thinkingLevel: "high" },
@@ -63,10 +68,10 @@ describe("user prompt box", () => {
     h.chat.addChild(new UserMessageComponent("ping"));
     const out = plain(h.chat, 60);
     expect(out).toHaveLength(3);
-    expect(out[0]).toStartWith("╔══ π ");
+    expect(out[0]).toStartWith("╔══ \ue22c ");
     expect(out[0]).toEndWith(" 14:40:32 ═╗");
     expect(out[1]).toBe(`║ ping${" ".repeat(60 - 8)} ║`);
-    expect(out[2]).toEndWith(" claude-opus-5.5 ═╝");
+    expect(out[2]).toEndWith(" p/claude-opus-5.5 ═╝");
     for (const line of out) expect(visibleWidth(line)).toBe(60);
   });
 
@@ -94,7 +99,7 @@ describe("user prompt box", () => {
     h.chat.addChild(new UserMessageComponent("fresh"));
     const before = plain(h.chat, 40);
     expect(before[0]).not.toMatch(/\d\d:\d\d:\d\d/);
-    expect(before[0]).toStartWith("╔══ π ");
+    expect(before[0]).toStartWith("╔══ \ue22c ");
     branch.push(userEntry("u1", "fresh"));
     expect(plain(h.chat, 40)[0]).toContain("14:40:32");
   });
@@ -107,11 +112,61 @@ describe("user prompt box", () => {
     expect(out[0]).toStartWith("╔");
     expect(out[1]!.trimEnd()).toBe("copy me");
     expect(out[2]).toStartWith("╚");
+    h.command("cp"); // copy mode is global pi-frame state; restore it for later tests
   });
 
   test("narrow widths fall back to the native renderer", () => {
     const h = harness([userEntry("u1", "tiny")]);
     h.chat.addChild(new UserMessageComponent("tiny"));
     expect(plain(h.chat, 12).join("\n")).not.toContain("╔");
+  });
+});
+
+describe("prompt box settings (/frame-settings)", () => {
+  const settingsFile = () => join(process.env.PI_CODING_AGENT_DIR!, "pi-frame", "prompt-loader.json");
+  const legacyFile = () => join(process.env.PI_CODING_AGENT_DIR!, "pi-topping", "settings.json");
+  const write = (file: string, data: unknown) => {
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, JSON.stringify(data));
+  };
+  afterEach(() => {
+    rmSync(settingsFile(), { force: true });
+    rmSync(legacyFile(), { force: true });
+  });
+
+  test("style, icon, provider and model options reshape the box", () => {
+    write(settingsFile(), {
+      schemaVersion: 3,
+      decorations: { borderStyle: "heavy", promptIcon: false, promptProvider: true, promptModel: true, promptTimestamp: false },
+    });
+    const h = harness([{ type: "model_change", id: "m", timestamp: "", provider: "local-claude", modelId: "opus" }, userEntry("u1", "hi")]);
+    h.chat.addChild(new UserMessageComponent("hi"));
+    const out = plain(h.chat, 40);
+    expect(out[0]).toBe(`┏${"━".repeat(38)}┓`);
+    expect(out[1]).toStartWith("┃ hi");
+    expect(out[2]).toEndWith(" local-claude/opus ━┛");
+  });
+
+  test("turning the box off falls back to Pi's native prompt row", () => {
+    write(settingsFile(), { schemaVersion: 3, decorations: { decorateUserPrompt: false } });
+    const h = harness([userEntry("u1", "plain")]);
+    h.chat.addChild(new UserMessageComponent("plain"));
+    expect(plain(h.chat, 40).join("\n")).not.toContain("╔");
+  });
+
+  test("pi-topping settings are imported, but its prompt-interception switch is not", () => {
+    // decorateUserPrompt=false was how users kept prompts native under pi-topping; here it would only hide the box.
+    write(legacyFile(), { schemaVersion: 3, decorations: { decorateUserPrompt: false, borderStyle: "rounded", useNerdFont: false } });
+    const h = harness([userEntry("u1", "legacy")]);
+    h.chat.addChild(new UserMessageComponent("legacy"));
+    const out = plain(h.chat, 40);
+    expect(out[0]).toStartWith("╭── π ");
+  });
+});
+
+describe("loader words", () => {
+  test("the base pool is pi-frame's own Chinese set", () => {
+    expect(WORDS.length).toBeGreaterThan(50);
+    expect(WORDS.every((w) => /[\u4e00-\u9fff]/.test(w.present_tense))).toBe(true);
   });
 });

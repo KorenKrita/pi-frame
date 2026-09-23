@@ -9,6 +9,8 @@ import { Text, stripTerminalSequences } from "/Users/korenkrita/.bun/install/glo
 import * as themeModule from "/Users/korenkrita/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/dist/modes/interactive/theme/theme.js";
 
 const extensionPath = fileURLToPath(new URL("../index.ts", import.meta.url));
+// Keep the developer's real ~/.pi/agent settings out of the run (read lazily at extension load).
+process.env.PI_CODING_AGENT_DIR = (await import("node:fs")).mkdtempSync((await import("node:path")).join((await import("node:os")).tmpdir(), "pi-frame-node-"));
 initTheme("dark");
 let mode = "native";
 const ctx = {
@@ -20,6 +22,7 @@ const ctx = {
     theme: themeModule.theme,
     setWidget() {},
     setStatus() {},
+    setWorkingIndicator() {}, setWorkingMessage() {},
     setToolsExpanded() {},
     onTerminalInput() { return () => {}; },
   },

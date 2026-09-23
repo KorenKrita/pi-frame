@@ -27,6 +27,10 @@ import { DOTTED, fitLine, frame, frameOverhead, MIN_FRAME_WIDTH, ROUNDED_DASHED,
 import { formatTokens, toolLine, type ToolStatus } from "./tool-line.ts";
 import { computeFoldPlan, EMPTY_PLAN, formatSummary, type FoldPlan, type TurnFoldMode } from "./turn-fold.ts";
 import { withTranscriptAnchor } from "./viewport.ts";
+import { getThinkingLevelColorizer } from "./loader/format.ts";
+import { BORDER_GLYPHS } from "./loader/prompt-decorator.ts";
+import { SessionManager as LoaderSession } from "./loader/session.ts";
+import type { DecoratorSettings } from "./loader/settings.ts";
 
 // ─── State (global so a reloaded module replaces state instead of re-wrapping prototypes) ────
 
@@ -65,6 +69,8 @@ interface State {
   userMetaKey: string;
   branch: (() => readonly unknown[]) | undefined;
   liveThinking: (() => ThinkingLevel) | undefined;
+  /** Prompt-box options owned by the loader settings (`/frame-settings`). */
+  promptSettings: (() => DecoratorSettings["decorations"]) | undefined;
 }
 
 interface Globals {
@@ -103,6 +109,7 @@ function freshState(): State {
     userMetaKey: "",
     branch: undefined,
     liveThinking: undefined,
+    promptSettings: undefined,
   };
 }
 
@@ -132,6 +139,7 @@ type FgColor = Parameters<Theme["fg"]>[0];
 type ThinkingLevel = Parameters<Theme["getThinkingBorderColor"]>[0];
 interface UserMeta {
   at?: number;
+  provider?: string;
   model?: string;
   thinking?: ThinkingLevel;
 }
@@ -507,7 +515,6 @@ function patchedBashExecutionRender(this: BashExecutionComponent, width: number)
 
 // ─── User prompt box: display-only, the prompt still travels Pi's native user-message path ──
 
-const DOUBLE = { tl: "╔", tr: "╗", bl: "╚", br: "╝", h: "═", v: "║" };
 const OSC133_START = "\x1b]133;A\x07";
 const OSC133_END = "\x1b]133;B\x07\x1b]133;C\x07";
 
@@ -533,13 +540,16 @@ function syncUserMeta(chat: ContainerLike): void {
   if (key === state.userMetaKey) return;
   state.userMetaKey = key;
   const metas: { text: string; meta: UserMeta }[] = [];
+  let provider: string | undefined;
   let model: string | undefined;
   let thinking: ThinkingLevel | undefined;
   for (const e of branch) {
-    if (e?.type === "model_change") model = e.modelId;
-    else if (e?.type === "thinking_level_change") thinking = e.thinkingLevel;
+    if (e?.type === "model_change") {
+      provider = e.provider;
+      model = e.modelId;
+    } else if (e?.type === "thinking_level_change") thinking = e.thinkingLevel;
     else if (e?.type === "message" && e.message?.role === "user") {
-      metas.push({ text: userEntryText(e.message), meta: { at: e.message.timestamp ?? Date.parse(e.timestamp), model, thinking } });
+      metas.push({ text: userEntryText(e.message), meta: { at: e.message.timestamp ?? Date.parse(e.timestamp), provider, model, thinking } });
     }
   }
   let next = 0;
@@ -559,30 +569,36 @@ function patchedUserMessageRender(this: UserMessageComponent, width: number): st
   const theme = state.theme;
   // UserMessageComponent → Box (userMessageBg) → Markdown. Render the Markdown alone: the frame replaces the background band.
   const body = (this as unknown as { children: { children?: Renderable[] }[] }).children[0]?.children?.[0];
-  if (!theme || !body || width < MIN_FRAME_WIDTH) return globals.originals.userMessageRender!.call(this, width);
+  const settings = state.promptSettings?.();
+  if (!theme || !body || !settings?.decorateUserPrompt || width < MIN_FRAME_WIDTH) {
+    return globals.originals.userMessageRender!.call(this, width);
+  }
 
+  const g = BORDER_GLYPHS[settings.borderStyle] ?? BORDER_GLYPHS.double;
   const meta = state.userMeta.get(this) ?? {};
-  const level = meta.thinking ?? state.liveThinking?.();
-  const border: Paint = level ? theme.getThinkingBorderColor(level) : fg("border");
+  const border: Paint = getThinkingLevelColorizer(theme, settings.borderColor, meta.thinking ?? state.liveThinking?.());
   const dim = fg("dim");
   const inner = width - 2;
-  const time = meta.at
+  const time = settings.promptTimestamp && meta.at
     ? new Date(meta.at).toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })
     : "";
-  const iconSeg = `${border(`${DOUBLE.h}${DOUBLE.h} `)}${fg("text")("π")}${border(" ")}`; // 5 cols
-  const timeSeg = time ? `${border(" ")}${dim(time)}${border(` ${DOUBLE.h}`)}` : "";
+  const icon = settings.promptIcon ? (settings.useNerdFont ? "\ue22c" : "π") : "";
+  const iconSeg = icon ? `${border(`${g.h}${g.h} `)}${fg("text")(icon)}${border(" ")}` : "";
+  const iconWidth = icon ? 4 + visibleWidth(icon) : 0;
+  const timeSeg = time ? `${border(" ")}${dim(time)}${border(` ${g.h}`)}` : "";
   const timeWidth = time ? time.length + 3 : 0;
-  const top = border(DOUBLE.tl) + iconSeg + border(DOUBLE.h.repeat(Math.max(0, inner - 5 - timeWidth))) + timeSeg + border(DOUBLE.tr);
-  const model = meta.model ? truncateToWidth(meta.model, Math.max(0, inner - 3), "…").replace(/\x1b\[0m/g, "") : "";
-  const modelWidth = model ? visibleWidth(model) + 3 : 0;
-  const modelSeg = model ? `${border(" ")}${dim(model)}${border(` ${DOUBLE.h}`)}` : "";
-  const bottom = border(DOUBLE.bl) + border(DOUBLE.h.repeat(Math.max(0, inner - modelWidth))) + modelSeg + border(DOUBLE.br);
+  const top = border(g.tl) + iconSeg + border(g.h.repeat(Math.max(0, inner - iconWidth - timeWidth))) + timeSeg + border(g.tr);
+  const labelText = [settings.promptProvider ? meta.provider : "", settings.promptModel ? meta.model : ""].filter(Boolean).join("/");
+  const label = labelText ? truncateToWidth(labelText, Math.max(0, inner - 3), "…").replace(/\x1b\[0m/g, "") : "";
+  const labelWidth = label ? visibleWidth(label) + 3 : 0;
+  const labelSeg = label ? `${border(" ")}${dim(label)}${border(` ${g.h}`)}` : "";
+  const bottom = border(g.bl) + border(g.h.repeat(Math.max(0, inner - labelWidth))) + labelSeg + border(g.br);
 
   // Copy mode (/cp) keeps the top and bottom rules but drops side bars so selections stay clean.
   const boxed = state.frameStyle === "boxed";
   const textWidth = boxed ? width - 4 : width;
   const lines = trimBlankEdges(body.render(textWidth)).map((line) =>
-    boxed ? `${border(DOUBLE.v)} ${fitLine(line, textWidth)} ${border(DOUBLE.v)}` : line,
+    boxed ? `${border(g.v)} ${fitLine(line, textWidth)} ${border(g.v)}` : line,
   );
   const out = [top, ...lines, bottom].map((line) => (visibleWidth(line) > width ? truncateToWidth(line, width) : line));
   out[0] = OSC133_START + out[0];
@@ -672,6 +688,17 @@ function hookChatContainer(chat: ContainerLike): void {
 
 export default function piFrame(pi: ExtensionAPI): void {
   installPrototypePatches();
+  const loader = new LoaderSession(pi);
+  loader.install();
+  S().promptSettings = () => loader.settings.decorations;
+
+  pi.registerCommand("frame-settings", {
+    description: "pi-frame 设置：输入框、加载动画、状态栏",
+    handler: async (_args, ctx) => {
+      await loader.showSettings(ctx);
+      S().tui?.requestRender();
+    },
+  });
   let unsubscribeKeys: (() => void) | undefined;
 
   const updateStatus = (ctx: ExtensionContext) => {

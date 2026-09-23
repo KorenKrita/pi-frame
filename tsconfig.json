@@ -13,5 +13,5 @@
       "@earendil-works/*": ["/Users/korenkrita/.bun/install/global/node_modules/@earendil-works/*"]
     }
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "loader/*.ts"]
 }
