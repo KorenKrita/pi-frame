@@ -17,7 +17,7 @@ const ctx = {
   hasUI: true,
   mode: "tui",
   cwd: process.cwd(),
-  sessionManager: { getBranch: () => [{ type: "custom", customType: "pi-frame-config", data: { toolMode: mode, foldMode: "expanded" } }] },
+  sessionManager: { buildContextEntries: () => [], getBranch: () => [{ type: "custom", customType: "pi-frame-config", data: { toolMode: mode, foldMode: "expanded" } }] },
   ui: {
     theme: themeModule.theme,
     setWidget() {},

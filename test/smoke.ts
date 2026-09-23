@@ -35,7 +35,7 @@ const ui: any = {
   setWorkingIndicator() {}, setWorkingMessage() {}, getEditorComponent: () => undefined, setEditorComponent() {},
   notify: () => {},
 };
-const ctx: any = { hasUI: true, mode: "tui", cwd: "/Users/korenkrita/Coding", ui, sessionManager: { getBranch: () => [] } };
+const ctx: any = { hasUI: true, mode: "tui", cwd: "/Users/korenkrita/Coding", ui, sessionManager: { buildContextEntries: () => [], getBranch: () => [] } };
 for (const h of handlers.session_start) h({}, ctx);
 console.log("chat found:", findChatContainer(tui) === chat, "status:", statuses["pi-frame"], "expanded:", toolsExpanded);
 

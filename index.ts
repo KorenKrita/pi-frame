@@ -13,6 +13,7 @@ import {
   AssistantMessageComponent,
   BashExecutionComponent,
   CustomMessageComponent,
+  parseSkillBlock,
   ToolExecutionComponent,
   UserMessageComponent,
   type ExtensionAPI,
@@ -29,6 +30,7 @@ import { formatTokens, toolLine, type ToolStatus } from "./tool-line.ts";
 import { computeFoldPlan, EMPTY_PLAN, formatSummary, type FoldPlan, type TurnFoldMode } from "./turn-fold.ts";
 import { withTranscriptAnchor } from "./viewport.ts";
 import { getThinkingLevelColorizer } from "./loader/format.ts";
+import { stripControlChars } from "./loader/util.ts";
 import { BORDER_GLYPHS } from "./loader/prompt-decorator.ts";
 import { SessionManager as LoaderSession } from "./loader/session.ts";
 import { installStatusline } from "./statusline/index.ts";
@@ -76,7 +78,11 @@ interface State {
   /** User prompt box metadata (sent time, model, thinking level), matched from session entries. */
   userMeta: WeakMap<object, UserMeta>;
   userMetaKey: string;
+  /** Metadata for the user entries Pi displays, in display order; rebuilt when the branch changes. */
+  userMetas: { text: string; meta: UserMeta }[];
   branch: (() => readonly unknown[]) | undefined;
+  /** The compaction-aware entries Pi renders the transcript from. */
+  shownEntries: (() => readonly unknown[]) | undefined;
   liveThinking: (() => ThinkingLevel) | undefined;
   /** Prompt-box options owned by the loader settings (`/frame-settings`). */
   promptSettings: (() => DecoratorSettings["decorations"]) | undefined;
@@ -116,7 +122,9 @@ function freshState(): State {
     home: homedir(),
     userMeta: new WeakMap(),
     userMetaKey: "",
+    userMetas: [],
     branch: undefined,
+    shownEntries: undefined,
     liveThinking: undefined,
     promptSettings: undefined,
   };
@@ -537,30 +545,47 @@ function userEntryText(message: { content?: unknown }): string {
 /** Pair user rows with branch user entries in order; each gets its send time and the model/thinking level then in effect. */
 function syncUserMeta(chat: ContainerLike): void {
   const state = S();
-  if (!state.branch || !chat.children.some((r) => r instanceof UserMessageComponent && !state.userMeta.has(r))) return;
+  if (!state.branch || !state.shownEntries || !chat.children.some((r) => r instanceof UserMessageComponent && !state.userMeta.has(r))) return;
   let branch: readonly any[];
+  let shown: readonly any[];
   try {
     branch = state.branch();
+    shown = state.shownEntries();
   } catch {
     return; // stale ctx after session replacement; the next session_start rebinds
   }
-  // A user entry is appended after its row is first drawn; rescan only when the branch changes.
+  // A user entry is appended after its row is first drawn, so rebuild the metadata when the branch changes;
+  // rows are matched below on every call because Pi can rebuild the chat without touching the branch.
   const key = `${branch.length}:${branch.at(-1)?.id ?? ""}`;
-  if (key === state.userMetaKey) return;
-  state.userMetaKey = key;
-  const metas: { text: string; meta: UserMeta }[] = [];
-  let provider: string | undefined;
-  let model: string | undefined;
-  let thinking: ThinkingLevel | undefined;
-  for (const e of branch) {
-    if (e?.type === "model_change") {
-      provider = e.provider;
-      model = e.modelId;
-    } else if (e?.type === "thinking_level_change") thinking = e.thinkingLevel;
-    else if (e?.type === "message" && e.message?.role === "user") {
-      metas.push({ text: userEntryText(e.message), meta: { at: e.message.timestamp ?? Date.parse(e.timestamp), provider, model, thinking } });
+  if (key !== state.userMetaKey) {
+    state.userMetaKey = key;
+    // Model and thinking changes are read from the whole branch: compaction hides them from the shown entries.
+    const byId = new Map<string, UserMeta>();
+    let provider: string | undefined;
+    let model: string | undefined;
+    let thinking: ThinkingLevel | undefined;
+    for (const e of branch) {
+      if (e?.type === "model_change") {
+        // Session files are external input; never let a label carry terminal control sequences.
+        provider = typeof e.provider === "string" ? stripControlChars(e.provider) : undefined;
+        model = typeof e.modelId === "string" ? stripControlChars(e.modelId) : undefined;
+      } else if (e?.type === "thinking_level_change") thinking = e.thinkingLevel;
+      else if (e?.type === "message" && e.message?.role === "user") {
+        byId.set(e.id, { at: e.message.timestamp ?? Date.parse(e.timestamp), provider, model, thinking });
+      }
+    }
+    state.userMetas = [];
+    for (const e of shown) {
+      if (e?.type !== "message" || e.message?.role !== "user") continue;
+      const meta = byId.get(e.id);
+      const full = userEntryText(e.message);
+      // Pi shows a skill invocation's trailing prompt as its own user row, and nothing for a bare skill block.
+      const skill = parseSkillBlock(full);
+      const text = skill ? skill.userMessage : full;
+      if (meta && text) state.userMetas.push({ text, meta });
     }
   }
+  const metas = state.userMetas;
   let next = 0;
   for (const row of chat.children) {
     if (!(row instanceof UserMessageComponent)) continue;
@@ -793,6 +818,7 @@ export default function piFrame(pi: ExtensionAPI): void {
     state.theme = ctx.ui.theme;
     state.cwd = ctx.cwd;
     state.branch = () => ctx.sessionManager.getBranch();
+    state.shownEntries = () => ctx.sessionManager.buildContextEntries();
     state.liveThinking = () => pi.getThinkingLevel();
     state.userMetaKey = "";
     const tui = captureTui(ctx.ui, CAPTURE_KEY);

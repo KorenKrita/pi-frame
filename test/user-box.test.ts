@@ -13,7 +13,7 @@ initTheme("dark");
 
 const SENT = new Date(2026, 8, 23, 14, 40, 32).getTime();
 
-function harness(branch: unknown[]) {
+function harness(branch: unknown[], shown?: () => unknown[]) {
   const handlers: Record<string, Function[]> = {};
   const commands: Record<string, Function> = {};
   const chat = new Container();
@@ -35,7 +35,7 @@ function harness(branch: unknown[]) {
     hasUI: true,
     mode: "tui",
     cwd: process.cwd(),
-    sessionManager: { getBranch: () => branch },
+    sessionManager: { getBranch: () => branch, buildContextEntries: () => shown?.() ?? branch },
     ui: {
       theme: themeModule.theme,
       setWidget: (_key: string, factory: any) => { if (typeof factory === "function") factory(tui, themeModule.theme); },
@@ -199,3 +199,45 @@ describe("bundled word packs", () => {
     }
   });
 });
+
+describe("prompt labels from session history (review fixes)", () => {
+  test("model labels from a session file cannot carry terminal control sequences", () => {
+    const osc52 = "\x1b]52;c;cHduZWQ=\x07";
+    const h = harness([{ type: "model_change", id: "m", timestamp: "", provider: `p${osc52}`, modelId: `evil${osc52}\nx` }, userEntry("u1", "hi")]);
+    h.chat.addChild(new UserMessageComponent("hi"));
+    const raw = h.chat.render(60).join("\n");
+    expect(raw).not.toContain("\x1b]52");
+    expect(plain(h.chat, 60)[2]).toContain("p]52;c;cHduZWQ=/evil]52;c;cHduZWQ=x");
+  });
+
+  test("after compaction a retained prompt gets its own entry's labels, not an older identical prompt's", () => {
+    const branch = [
+      { type: "model_change", id: "m1", timestamp: "", provider: "p", modelId: "old-model" },
+      userEntry("u1", "继续", SENT),
+      { type: "model_change", id: "m2", timestamp: "", provider: "p", modelId: "new-model" },
+      userEntry("u2", "继续", SENT + 60_000),
+    ];
+    const h = harness(branch, () => [branch[3]]);
+    h.chat.addChild(new UserMessageComponent("继续"));
+    const out = plain(h.chat, 60);
+    expect(out[2]).toContain("p/new-model");
+    expect(out[0]).toContain("14:41:32");
+  });
+
+  test("a skill invocation's trailing prompt is labeled", () => {
+    const skill = '<skill name="demo" location="/x/SKILL.md">\nbody\n</skill>\n\nfix it';
+    const h = harness([{ type: "model_change", id: "m", timestamp: "", provider: "p", modelId: "m1" }, userEntry("u1", skill)]);
+    h.chat.addChild(new UserMessageComponent("fix it"));
+    expect(plain(h.chat, 60)[2]).toContain("p/m1");
+  });
+
+  test("rows rebuilt without a branch change keep their labels", () => {
+    const h = harness([{ type: "model_change", id: "m", timestamp: "", provider: "p", modelId: "m1" }, userEntry("u1", "hi")]);
+    h.chat.addChild(new UserMessageComponent("hi"));
+    plain(h.chat, 60);
+    h.chat.clear();
+    h.chat.addChild(new UserMessageComponent("hi"));
+    expect(plain(h.chat, 60)[2]).toContain("p/m1");
+  });
+});
+

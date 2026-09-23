@@ -39,7 +39,7 @@ function harness(factory = piFrame) {
     mode: "tui",
     cwd: process.cwd(),
     sessionManager: {
-      getBranch: () => [{ type: "custom", customType: "pi-frame-config", data: { toolMode: "oneLine", foldMode: "expanded" } }],
+      buildContextEntries: () => [], getBranch: () => [{ type: "custom", customType: "pi-frame-config", data: { toolMode: "oneLine", foldMode: "expanded" } }],
     },
     ui: {
       theme: themeModule.theme,

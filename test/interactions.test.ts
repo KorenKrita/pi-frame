@@ -55,7 +55,7 @@ function harness() {
   let expanded = false;
   const ctx: any = {
     hasUI: true, mode: "tui", cwd: process.cwd(),
-    sessionManager: { getBranch: () => [{ type: "custom", customType: "pi-frame-config", data: { toolMode: "oneLine", foldMode: "expanded" } }] },
+    sessionManager: { buildContextEntries: () => [], getBranch: () => [{ type: "custom", customType: "pi-frame-config", data: { toolMode: "oneLine", foldMode: "expanded" } }] },
     ui: {
       theme: themeModule.theme,
       setWidget: (_key: string, factory: any) => { if (typeof factory === "function") factory(reference); },
