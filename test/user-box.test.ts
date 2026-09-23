@@ -2,6 +2,8 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { WORDS } from "../loader/words.ts";
+import { buildMenuSections, DEFAULT_SETTINGS } from "../loader/settings.ts";
+import { loadBundledWordPacks } from "../loader/word-packs.ts";
 import { UserMessageComponent, initTheme } from "@earendil-works/pi-coding-agent";
 import { Container, stripTerminalSequences, visibleWidth } from "@earendil-works/pi-tui";
 import * as themeModule from "/Users/korenkrita/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/dist/modes/interactive/theme/theme.js";
@@ -168,5 +170,20 @@ describe("loader words", () => {
   test("the base pool is pi-frame's own Chinese set", () => {
     expect(WORDS.length).toBeGreaterThan(50);
     expect(WORDS.every((w) => /[\u4e00-\u9fff]/.test(w.present_tense))).toBe(true);
+  });
+});
+
+describe("/frame-settings pages", () => {
+  test("the prompt page and the loader page each show only their own options", () => {
+    const ids = (page: "prompt" | "loader") =>
+      buildMenuSections(page, DEFAULT_SETTINGS, loadBundledWordPacks()).flatMap((section) => section.items.map((item) => item.id));
+    const prompt = ids("prompt");
+    const loader = ids("loader");
+    expect(prompt).toContain("decorateUserPrompt");
+    expect(prompt).toContain("useNerdFont");
+    expect(prompt.some((id) => id.startsWith("pack:"))).toBe(false);
+    expect(loader).toContain("animatedSpinner");
+    expect(loader.some((id) => id.startsWith("pack:"))).toBe(true);
+    expect(loader.filter((id) => prompt.includes(id))).toEqual([]);
   });
 });

@@ -40,7 +40,7 @@ import {
 } from "./format.ts";
 import { showMenu } from "./menu.ts";
 import { getResponseModelColorizer } from "./nvidia-green.ts";
-import { applyMenuResult, buildMenuSections, loadSettings, saveSettings, type ThinkingLevelColor } from "./settings.ts";
+import { applyMenuResult, buildMenuSections, loadSettings, saveSettings, type LoaderMenuPage, type ThinkingLevelColor } from "./settings.ts";
 import { PreviewRenderer } from "./preview.ts";
 import { PROMPT_BOX_TYPE, promptBoxRenderer, type PromptBoxDetails } from "./prompt-decorator.ts";
 import { isPlainObject, modelsResemble, stripControlChars } from "./util.ts";
@@ -563,7 +563,7 @@ export class SessionManager {
 		}
 	}
 
-	async showSettings(ctx: ExtensionCommandContext): Promise<void> {
+	async showSettings(ctx: ExtensionCommandContext, page: LoaderMenuPage): Promise<void> {
 		if (ctx.mode !== "tui") {
 			ctx.ui.notify("/frame-settings 需要在 TUI 模式下使用", "error");
 			return;
@@ -574,10 +574,10 @@ export class SessionManager {
 		const before = this.indicatorFingerprint();
 		const preview = new PreviewRenderer(ctx, this.#allPacks);
 		const result = await showMenu<Record<string, boolean | string>>(ctx, {
-			title: "pi-frame：输入框与加载动画",
+			title: page === "prompt" ? "pi-frame 设置 · 输入框" : "pi-frame 设置 · 加载动画",
 			maxHeight: "75%",
-			sections: buildMenuSections(this.#settings, this.#bundledPacks, this.#userPacks),
-			hints: ["↑↓ move", "PgUp/PgDn page", "←→ select", "␣ toggle", "⏎ apply", "esc cancel"],
+			sections: buildMenuSections(page, this.#settings, this.#bundledPacks, this.#userPacks),
+			hints: ["↑↓ 移动", "PgUp/PgDn 翻页", "←→ 切换选项", "␣ 开关", "⏎ 应用", "esc 取消"],
 			preview: preview.render.bind(preview),
 		});
 		if (!result.applied) return;

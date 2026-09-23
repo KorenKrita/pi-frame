@@ -178,7 +178,8 @@ export function fromCycleSpeed(value: unknown): "slow" | "normal" | "fast" {
 	return value === "slow" || value === "fast" ? value : "normal";
 }
 
-type MenuSectionName = "输入框" | "加载动画" | "其他";
+type MenuSectionName = "输入框" | "加载动画";
+export type LoaderMenuPage = "prompt" | "loader";
 type DecorationSettings = DecoratorSettings["decorations"];
 type FeatureSettings = DecoratorSettings["features"];
 type DecorationBooleanKey = { [Key in keyof DecorationSettings]: DecorationSettings[Key] extends boolean ? Key : never }[keyof DecorationSettings];
@@ -230,7 +231,7 @@ export const MENU_ENTRIES: readonly MenuEntry[] = [
 	{ id: "showResponseModel", label: "实际响应模型", section: "加载动画", group: "features", key: "responseModel" },
 	{ id: "responseModelColor", label: "响应模型颜色", section: "加载动画", group: "decorations", key: "responseModelColor", cycleValues: THINKING_LEVEL_COLOR_VALUES, cycleValueLabels: COLOR_CYCLE_LABELS },
 	{ id: "responseModelDimmed", label: "响应模型调暗", section: "加载动画", group: "decorations", key: "responseModelDimmed" },
-	{ id: "useNerdFont", label: "使用 Nerd Font 图标", section: "其他", group: "decorations", key: "useNerdFont" },
+	{ id: "useNerdFont", label: "使用 Nerd Font 图标", section: "输入框", group: "decorations", key: "useNerdFont" },
 ];
 
 function menuItem(entry: MenuEntry, settings: DecoratorSettings): MenuSection["items"][number] {
@@ -288,14 +289,13 @@ function buildSection(title: MenuSectionName, settings: DecoratorSettings): Menu
 	return { title, items: MENU_ENTRIES.filter(entry => entry.section === title).map(entry => menuItem(entry, settings)) };
 }
 
-export function buildMenuSections(settings: DecoratorSettings, bundledPacks: readonly WordPack[], userPacks: readonly WordPack[] = []): MenuSection[] {
+export function buildMenuSections(page: LoaderMenuPage, settings: DecoratorSettings, bundledPacks: readonly WordPack[], userPacks: readonly WordPack[] = []): MenuSection[] {
+	if (page === "prompt") return [buildSection("输入框", settings)];
 	const packs = [...bundledPacks, ...userPacks];
 	return [
-		buildSection("输入框", settings),
 		buildSection("加载动画", settings),
 		{ title: "元素顺序", items: parseLoaderOrder(settings.loaderOrder).map(id => ({ id, label: LOADER_ELEMENT_LABELS[id], value: false, reorderGroup: LOADER_ORDER_ID })) },
 		{ title: "词包", items: packs.map((pack) => ({ id: `pack:${pack.id}`, label: pack.name, value: isWordPackEnabled(pack.id, settings.wordPacks) })) },
-		buildSection("其他", settings),
 	];
 }
 

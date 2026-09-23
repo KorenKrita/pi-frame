@@ -22,7 +22,7 @@ Rendering does not change tool schemas, execution, stored arguments, or results,
 
 ## Settings: `/frame-settings`
 
-First pick a page (prompt box & loader, or statusline); each opens a settings menu (Chinese UI) with a live preview and applies on ⏎. Settings persist to `~/.pi/agent/pi-frame/prompt-loader.json` and `~/.pi/agent/pi-frame/statusline.json`. On first run, existing `~/.pi/agent/pi-topping/settings.json` and `~/.pi/agent/pi-topping-statusline/settings.json` are used as the starting point.
+First pick a page (prompt box, working loader, or statusline); each opens a settings menu (Chinese UI) with a live preview and applies on ⏎. Settings persist to `~/.pi/agent/pi-frame/prompt-loader.json` and `~/.pi/agent/pi-frame/statusline.json`. On first run, existing `~/.pi/agent/pi-topping/settings.json` and `~/.pi/agent/pi-topping-statusline/settings.json` are used as the starting point.
 
 ## User prompt box
 

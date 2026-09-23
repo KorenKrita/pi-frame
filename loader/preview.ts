@@ -28,7 +28,6 @@ export class PreviewRenderer {
 	}
 	render(values: Record<string, boolean | string>, elapsedMs: number, activeItemId?: string, width: number = DEFAULT_PREVIEW_WIDTH): PreviewResult {
 		if (PROMPT_IDS.has(activeItemId ?? "")) return this.promptPreview(values, width);
-		if (activeItemId === "useNerdFont") return { lines: ["", `图标预览：${values.useNerdFont ? "" : "π"}`, ""] };
 		if (activeItemId?.startsWith("pack:")) return this.packPreview(activeItemId.slice("pack:".length), values);
 		let nextRefreshInMs: number | undefined;
 		if (values.shimmer !== false) {

@@ -697,8 +697,9 @@ export default function piFrame(pi: ExtensionAPI): void {
   pi.registerCommand("frame-settings", {
     description: "pi-frame 设置：输入框、加载动画、状态栏",
     handler: async (_args, ctx) => {
-      const page = await ctx.ui.select("pi-frame 设置", ["输入框与加载动画", "状态栏"]);
-      if (page === "输入框与加载动画") await loader.showSettings(ctx);
+      const page = await ctx.ui.select("pi-frame 设置", ["输入框", "加载动画", "状态栏"]);
+      if (page === "输入框") await loader.showSettings(ctx, "prompt");
+      else if (page === "加载动画") await loader.showSettings(ctx, "loader");
       else if (page === "状态栏") await statusline.openSettings(ctx);
       S().tui?.requestRender();
     },
