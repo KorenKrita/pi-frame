@@ -1,0 +1,16 @@
+{
+  "name": "pi-frame",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Borders, tool inspection, and turn folding for the Pi coding agent's terminal transcript.",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/KorenKrita/pi-frame.git" },
+  "keywords": ["pi-package", "pi-extension", "tui"],
+  "pi": { "extensions": ["./index.ts"] },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p .",
+    "verify": "tsc --noEmit -p . && bun test && JITI_FS_CACHE=0 node test/node-render.mjs"
+  }
+}
