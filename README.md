@@ -9,7 +9,7 @@ Borders, tool inspection, and turn folding for Pi's terminal transcript.
 | Mode | Display |
 | --- | --- |
 | `1-line` | Compact tool name, argument summary, and estimated output tokens. Long summaries may omit their middle; widths are measured in terminal columns (a CJK character takes two), so a row never exceeds the terminal width. A `codemode` row summarizes the script's nested calls from its result (`read ×3, bash ×1 npm test · 1 failed`); before the result arrives it shows the script's first line. |
-| `preview` | Complete **Input** as formatted JSON, plus the first 10 logical lines of **Output**. |
+| `preview` | Complete **Input** as formatted JSON, plus the first 10 rows of **Output** as wrapped to the terminal width, so a single long line (minified JSON, a log line) cannot fill the screen. |
 | `native` | Complete **Input** and **Output**. The historical mode name is retained for commands and saved sessions. |
 
 The input is never shortened in either detailed mode. Output combines the text blocks Pi received from the tool; it cannot recover content already truncated by the tool itself. An empty result and a pending result have explicit placeholders.

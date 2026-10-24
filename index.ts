@@ -21,7 +21,7 @@ import {
   type ExtensionContext,
   type Theme,
 } from "@earendil-works/pi-coding-agent";
-import { Container, Markdown, MouseRegion, Spacer, Text, getCapabilities, isKeyRelease, isKeyRepeat, matchesKey, stripTerminalSequences, truncateToWidth, visibleWidth, type TuiMouseEvent } from "@earendil-works/pi-tui";
+import { Container, Markdown, MouseRegion, Spacer, Text, getCapabilities, isKeyRelease, isKeyRepeat, matchesKey, stripTerminalSequences, truncateToWidth, visibleWidth, wrapTextWithAnsi, type TuiMouseEvent } from "@earendil-works/pi-tui";
 import { homedir } from "node:os";
 
 import { assistantRendersNothing, captureTui, findChatContainer, isAssistantRow, isToolRow, type ContainerLike, type Renderable, type TuiLike } from "./chat.ts";
@@ -321,6 +321,8 @@ interface ToolDisplayState {
 interface ToolDetailsView {
   input: Text;
   output: Text;
+  /** Collapsed Output preview, memoized per raw output and wrap width. */
+  preview?: { source: string; width: number; text: string; remaining: number };
   inputText?: string;
   outputText?: string;
   width: number;
@@ -332,6 +334,23 @@ interface ToolDetailsView {
 }
 
 const OUTPUT_PREVIEW_LINES = 10;
+
+/** Content width of `new Text(…, 1, 0)` at `width`, matching pi-tui's Text padding rule. */
+function textContentWidth(width: number): number {
+  const paddingX = Math.min(1, Math.max(0, Math.floor((width - 1) / 2)));
+  return Math.max(1, width - paddingX * 2);
+}
+
+/** First OUTPUT_PREVIEW_LINES wrapped rows: one long logical line (minified JSON, a log line) must not fill the screen. */
+function outputPreview(view: ToolDetailsView, output: string, width: number): { text: string; remaining: number } {
+  const cached = view.preview;
+  if (cached && cached.source === output && cached.width === width) return cached;
+  // Text expands tabs before wrapping; wrap the same text so the preview rows are exactly the rows Text draws.
+  const rows = wrapTextWithAnsi(output.replace(/\t/g, "   "), width);
+  const shown = rows.length > OUTPUT_PREVIEW_LINES ? rows.slice(0, OUTPUT_PREVIEW_LINES) : rows;
+  view.preview = { source: output, width, text: shown.join("\n"), remaining: rows.length - shown.length };
+  return view.preview;
+}
 const toolDetails = new WeakMap<ToolExecutionComponent, ToolDetailsView>();
 // Hit regions describe the rendered name only, never its padded column or argument summary.
 const toolTitles = new WeakMap<ToolExecutionComponent, { x: number; y: number; width: number }>();
@@ -353,11 +372,11 @@ function toolDetailLines(component: ToolExecutionComponent, width: number, offse
     input = "[Input cannot be represented as JSON]";
   }
   const inputText = `${heading("Input")}\n${input}`;
-  const outputLines = output ? output.split("\n") : [c.result ? "(no text output)" : "(waiting for output)"];
-  const visible = c.expanded ? outputLines : outputLines.slice(0, OUTPUT_PREVIEW_LINES);
-  const remaining = outputLines.length - visible.length;
+  let body = output || (c.result ? "(no text output)" : "(waiting for output)");
+  let remaining = 0;
+  if (output && !c.expanded) ({ text: body, remaining } = outputPreview(view, output, textContentWidth(width)));
   const previewHint = remaining > 0 ? `\n${fg("muted")(`… (${remaining} more lines; click Output to expand)`)}` : "";
-  const outputText = `${heading("Output")}\n${visible.join("\n")}${previewHint}`;
+  const outputText = `${heading("Output")}\n${body}${previewHint}`;
   if (view.inputText !== inputText) {
     view.input.setText(inputText);
     view.inputText = inputText;

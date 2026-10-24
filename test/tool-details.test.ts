@@ -137,6 +137,23 @@ describe("complete tool input and output", () => {
     expect(show(row)).toContain("LAST_OUTPUT_BLOCK_MUST_BE_VISIBLE");
   });
 
+  test.each([40, 110])("the output preview is capped by wrapped rows, so one 48 KB line stays short at width %i", (width) => {
+    const json = "{" + '"k":"v",'.repeat(6000) + '"END":1}';
+    const row = h.add("custom", { q: 1 }, {}, result(json));
+    h.press();
+    const rendered = lines(row, width);
+    const top = rendered.findIndex((line) => line.replace(/[│\s]/g, "") === "Output");
+    const hint = rendered.findIndex((line) => line.includes("more lines"));
+    expect(hint - top - 1).toBe(10);
+    const inner = width - 3 - 2; // frame side bars and Text padding
+    const total = Math.ceil(json.length / inner);
+    expect(rendered[hint]).toContain(`… (${total - 10} more lines`);
+    expect(rendered.length).toBeLessThan(25);
+    expect(rendered.join("")).not.toContain("END");
+    h.press();
+    expect(lines(row, width).join("").replace(/[│\s]/g, "")).toContain('"END":1}');
+  });
+
   test("custom summaries do not hide the actual tool output", () => {
     const row = h.add("custom", { action: "inspect" }, {
       renderCall: () => new Text("custom call view", 0, 0),
