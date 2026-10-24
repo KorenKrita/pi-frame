@@ -12,6 +12,8 @@ export interface ToolLineInput {
   output?: string;
   cwd?: string;
   home?: string;
+  /** `result.details` of the tool, when it has one (codemode reports its nested calls here). */
+  details?: unknown;
 }
 
 export interface ToolLinePaint {
@@ -57,6 +59,58 @@ function str(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
 
+interface NestedCall {
+  name?: unknown;
+  args?: unknown;
+  status?: unknown;
+}
+
+/**
+ * Pi stores each nested call's arguments as a JSON preview capped at 200 characters, ending in `...`
+ * when cut. Read a leading `command` string from it, decoding only complete escape sequences.
+ */
+export function nestedBashCommand(args: unknown): string | undefined {
+  if (typeof args !== "string") return undefined;
+  try {
+    const parsed = JSON.parse(args) as unknown;
+    const command = parsed && typeof parsed === "object" ? (parsed as { command?: unknown }).command : undefined;
+    return typeof command === "string" ? command : undefined;
+  } catch {
+    if (!args.endsWith("...")) return undefined;
+    const prefix = args.slice(0, -3);
+    const match = /^\{\s*"command"\s*:\s*"((?:[^"\\]|\\(?:["\\/bfnrt]|u[\da-fA-F]{4}))*)/.exec(prefix);
+    if (!match) return undefined;
+    try {
+      const command = JSON.parse(`"${match[1]}"`) as string;
+      return prefix[match[0].length] === '"' ? command : `${command}…`;
+    } catch {
+      return undefined;
+    }
+  }
+}
+
+/** `read ×3, bash ×1 npm test · 1 failed` from codemode's `details.calls`; undefined without calls. */
+export function describeCodemodeCalls(details: unknown): string | undefined {
+  const calls = (details as { calls?: unknown } | undefined)?.calls;
+  if (!Array.isArray(calls)) return undefined;
+  const counts = new Map<string, number>();
+  // Only the first bash command is shown, after its tool's count: `bash ×2 npm test`.
+  let command: { tool: string; text: string } | undefined;
+  let failed = 0;
+  for (const call of calls as NestedCall[]) {
+    if (!call || typeof call.name !== "string" || !call.name) continue;
+    counts.set(call.name, (counts.get(call.name) ?? 0) + 1);
+    if (call.status === "error") failed++;
+    if (!command && (call.name === "bash" || call.name === "bash_bg")) {
+      const text = nestedBashCommand(call.args);
+      if (text) command = { tool: call.name, text: firstLine(text) };
+    }
+  }
+  if (counts.size === 0) return undefined;
+  const parts = [...counts].map(([name, count]) => (command?.tool === name ? `${name} ×${count} ${command.text}` : `${name} ×${count}`));
+  return parts.join(", ") + (failed ? ` · ${failed} failed` : "");
+}
+
 /** Pick the one argument a human wants to see for this tool. */
 export function describeArgs(input: ToolLineInput): string {
   const args = (input.args ?? {}) as Record<string, unknown>;
@@ -84,6 +138,12 @@ export function describeArgs(input: ToolLineInput): string {
       return [str(args.pattern), shortPath(args.path, input)].filter(Boolean).join("  in ");
     case "ls":
       return shortPath(args.path, input) || ".";
+    case "codemode": {
+      const calls = describeCodemodeCalls(input.details);
+      if (calls) return calls;
+      // No calls yet (pending, or a script that called nothing): show the script's first line, as before.
+      return firstLine(str(args.code));
+    }
     default: {
       const preferred = ["query", "command", "path", "url", "pattern", "task", "name", "prompt", "description"];
       for (const key of preferred) {

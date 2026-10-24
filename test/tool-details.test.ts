@@ -524,6 +524,18 @@ describe("complete tool input and output", () => {
     expect(h.chat.render(width).every((line) => visibleWidth(line) <= width)).toBe(true);
   });
 
+  test("one-line codemode rows summarize the nested calls from the result details", () => {
+    const row = h.add("codemode", { code: "const [a, b] = await Promise.allSettled([" }, {}, {
+      ...result("Script completed"),
+      details: { calls: [
+        { id: "1", name: "read", args: '{"path":"x"}', status: "ok", durationMs: 2 },
+        { id: "2", name: "bash", args: '{"command":"ls -la"}', status: "error", durationMs: 3 },
+      ] },
+    });
+    expect(show(row)).toContain("read ×1, bash ×1 ls -la · 1 failed");
+    expect(show(row)).not.toContain("Promise.allSettled");
+  });
+
   test("the tool page of /frame-settings shows the current modes and persists changes to the session", async () => {
     const offered = await h.toolSettings({ toolMode: "preview", fold: true });
     expect(offered).toMatchObject({ toolMode: "oneLine", fold: false });

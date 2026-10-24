@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { visibleWidth } from "@earendil-works/pi-tui";
-import { clampLine, middleTruncate, toolLine, type ToolLineInput } from "../tool-line.ts";
+import { clampLine, describeCodemodeCalls, middleTruncate, nestedBashCommand, toolLine, type ToolLineInput } from "../tool-line.ts";
 
 const id = (text: string) => text;
 const paint = { glyph: id, name: id, detail: id, meta: id, error: id };
@@ -42,5 +42,38 @@ describe("single-line width", () => {
   test("clampLine leaves fitting lines untouched", () => {
     expect(clampLine("short", 10)).toBe("short");
     expect(visibleWidth(clampLine("中文中文中文", 5))).toBeLessThanOrEqual(5);
+  });
+});
+
+describe("codemode summary", () => {
+  const call = (name: string, args: string, status = "ok") => ({ id: name, name, args, status, durationMs: 1 });
+  const longCommand = `{"command":"git -C /Users/me/project log --oneline \\"--format=%h %s\\" ${"x".repeat(200)}`.slice(0, 197) + "...";
+
+  test("counts nested calls per tool, shows the first bash command and the failures", () => {
+    const details = { calls: [
+      call("read", '{"path":"a.ts"}'),
+      call("bash", '{"command":"npm test\\nnpm run lint","timeout":60}', "error"),
+      call("read", '{"path":"b.ts"}'),
+      call("bash", '{"command":"ls"}'),
+      call("read", '{"path":"c.ts"}', "cancelled"),
+    ] };
+    const line = toolLine({ toolName: "codemode", args: { code: "const x = 1;" }, status: "success", output: "ok", details }, 120, paint);
+    expect(line).toContain("read ×3, bash ×2 npm test … · 1 failed");
+    expect(line).not.toContain("const x");
+  });
+
+  test("decodes a bash command from Pi's 200-character argument preview", () => {
+    const details = { calls: [call("bash", longCommand)] };
+    const text = describeCodemodeCalls(details)!;
+    expect(text.startsWith('bash ×1 git -C /Users/me/project log --oneline "--format=%h %s" xxx')).toBe(true);
+    expect(text.endsWith("…")).toBe(true);
+    expect(nestedBashCommand('{"path":"x"...')).toBeUndefined();
+  });
+
+  test("falls back to the script's first line without nested calls", () => {
+    const code = "// @options: {\"timeout_ms\": 60000}\nreturn 1;";
+    for (const details of [undefined, { calls: [] }, { calls: [{ status: "ok" }] }]) {
+      expect(toolLine({ toolName: "codemode", args: { code }, status: "pending", details }, 120, paint)).toContain("// @options:");
+    }
   });
 });

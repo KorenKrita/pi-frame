@@ -458,7 +458,7 @@ function patchedToolRender(this: ToolExecutionComponent, width: number): string[
   if (compact) {
     const status = toolStatus(this);
     const line = toolLine(
-      { toolName: c.toolName, args: c.args, status, output: output?.display, cwd: state.cwd, home: state.home },
+      { toolName: c.toolName, args: c.args, status, output: output?.display, cwd: state.cwd, home: state.home, details: (this as unknown as { result?: { details?: unknown } }).result?.details },
       width,
       {
         glyph: fg(status === "error" ? "error" : status === "pending" ? "dim" : "accent"),
