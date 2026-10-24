@@ -117,6 +117,26 @@ describe("user prompt box", () => {
     h.command("cp"); // copy mode is global pi-frame state; restore it for later tests
   });
 
+  test("the prompt text drops Pi's background band and follows a theme change", () => {
+    const h = harness([userEntry("u1", "hello")]);
+    h.chat.addChild(new UserMessageComponent("hello"));
+    const bodyRow = () => h.chat.render(60).find((l) => stripTerminalSequences(l).includes("hello"))!;
+    const textColor = (theme: string) => {
+      initTheme(theme);
+      return themeModule.theme.fg("userMessageText", "x").split("x")[0]!;
+    };
+    const dark = textColor("dark");
+    const band = themeModule.theme.bg("userMessageBg", "x").split("x")[0]!;
+    expect(bodyRow()).toContain(dark);
+    expect(bodyRow()).not.toContain(band);
+    const light = textColor("light");
+    expect(light).not.toBe(dark);
+    h.chat.invalidate();
+    expect(bodyRow()).toContain(light);
+    initTheme("dark");
+    h.chat.invalidate();
+  });
+
   test("narrow widths fall back to the native renderer", () => {
     const h = harness([userEntry("u1", "tiny")]);
     h.chat.addChild(new UserMessageComponent("tiny"));

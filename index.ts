@@ -98,6 +98,7 @@ interface Globals {
     customMessageRender: (this: CustomMessageComponent, width: number) => string[];
     bashExecutionRender: (this: BashExecutionComponent, width: number) => string[];
     userMessageRender?: (this: UserMessageComponent, width: number) => string[];
+    userMessageInvalidate?: (this: UserMessageComponent) => void;
   };
   /** Re-pointed on every module evaluation so a /reload swaps in the new code. */
   hooks: { recomputePlan: (chat: ContainerLike) => void };
@@ -145,6 +146,7 @@ g[GLOBAL_KEY] = globals;
 // Older pi-frame instances do not have this slot yet; preserve the native method across /reload.
 globals.originals.toolHandleMouse ??= ToolExecutionComponent.prototype.handleMouse;
 globals.originals.userMessageRender ??= UserMessageComponent.prototype.render;
+globals.originals.userMessageInvalidate ??= UserMessageComponent.prototype.invalidate;
 globals.state = freshState();
 globals.hooks.recomputePlan = (chat) => recomputePlan(chat);
 const S = () => globals.state;
@@ -661,6 +663,13 @@ function userMessageBody(message: UserMessageComponent): Renderable | undefined 
   return plain;
 }
 
+/** The copy lives outside the component tree, so a theme change never reaches it: drop it with the original. */
+function patchedUserMessageInvalidate(this: UserMessageComponent): void {
+  globals.originals.userMessageInvalidate!.call(this);
+  const child = (this as unknown as { children: unknown[] }).children[0];
+  if (child instanceof Markdown) plainUserBodies.delete(child);
+}
+
 function patchedUserMessageRender(this: UserMessageComponent, width: number): string[] {
   const state = S();
   const theme = state.theme;
@@ -724,6 +733,7 @@ function installPrototypePatches(): void {
   CustomMessageComponent.prototype.render = patchedCustomMessageRender;
   BashExecutionComponent.prototype.render = patchedBashExecutionRender;
   UserMessageComponent.prototype.render = patchedUserMessageRender;
+  UserMessageComponent.prototype.invalidate = patchedUserMessageInvalidate;
 }
 
 // ─── Chat container hook: per-frame plan (fold + tight spacing), O(rows) ────────────────────
