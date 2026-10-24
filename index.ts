@@ -598,11 +598,27 @@ function syncUserMeta(chat: ContainerLike): void {
   }
 }
 
+// The frame replaces the userMessageBg band, so render the prompt text without it. Pi before 1.4 nests
+// Box (padding, background) → Markdown: render that Markdown alone. Pi 1.4 drops the Box and gives the
+// Markdown its own padding and background: render an unpadded, uncolored copy of it.
+const plainUserBodies = new WeakMap<Markdown, Markdown>();
+function userMessageBody(message: UserMessageComponent): Renderable | undefined {
+  const child = (message as unknown as { children: unknown[] }).children[0];
+  if (!(child instanceof Markdown)) return (child as { children?: Renderable[] } | undefined)?.children?.[0];
+  const md = child as unknown as { text: string; theme: ConstructorParameters<typeof Markdown>[3]; defaultTextStyle?: { bgColor?: unknown }; options?: ConstructorParameters<typeof Markdown>[5] };
+  let plain = plainUserBodies.get(child);
+  if (!plain || (plain as unknown as { text: string }).text !== md.text) {
+    const { bgColor: _bg, ...style } = md.defaultTextStyle ?? {};
+    plain = new Markdown(md.text, 0, 0, md.theme, style as ConstructorParameters<typeof Markdown>[4], md.options);
+    plainUserBodies.set(child, plain);
+  }
+  return plain;
+}
+
 function patchedUserMessageRender(this: UserMessageComponent, width: number): string[] {
   const state = S();
   const theme = state.theme;
-  // UserMessageComponent → Box (userMessageBg) → Markdown. Render the Markdown alone: the frame replaces the background band.
-  const body = (this as unknown as { children: { children?: Renderable[] }[] }).children[0]?.children?.[0];
+  const body = userMessageBody(this);
   const settings = state.promptSettings?.();
   if (!theme || !body || !settings?.decorateUserPrompt || width < MIN_FRAME_WIDTH) {
     return globals.originals.userMessageRender!.call(this, width);
