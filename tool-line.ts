@@ -1,5 +1,5 @@
 // One-line tool summary: `▸ bash    ls -la ~/x                       · 12 lines`
-import { visibleWidth } from "@earendil-works/pi-tui";
+import { sliceByColumn, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import type { Paint } from "./frame.ts";
 
 export type ToolStatus = "pending" | "success" | "error";
@@ -112,14 +112,23 @@ export function describeResult(input: ToolLineInput): string {
   return input.status === "error" ? `error ${tok}` : tok;
 }
 
-/** Truncate keeping both ends: `very/long/…/path.ts`. */
+/** Truncate to `max` display columns keeping both ends: `very/long/…/path.ts`. Wide (CJK) characters count as two. */
 export function middleTruncate(text: string, max: number): string {
-  if (max <= 1) return text.length ? "…" : "";
-  if (visibleWidth(text) <= max) return text;
+  if (max <= 0) return "";
+  const width = visibleWidth(text);
+  if (width <= max) return text;
+  if (max === 1) return "…";
   const keep = max - 1;
   const head = Math.ceil(keep * 0.6);
   const tail = keep - head;
-  return text.slice(0, head) + "…" + (tail > 0 ? text.slice(-tail) : "");
+  // Slice by column, never by UTF-16 unit: a wide character or surrogate pair is kept whole or dropped.
+  return sliceByColumn(text, 0, head, true) + "…" + (tail > 0 ? sliceByColumn(text, width - tail, tail, true) : "");
+}
+
+/** Last line of defence for single-line output: never hand Pi a line wider than the terminal. */
+export function clampLine(line: string, width: number): string {
+  if (width <= 0) return "";
+  return visibleWidth(line) > width ? truncateToWidth(line, width, "") : line;
 }
 
 export function toolLine(input: ToolLineInput, width: number, paint: ToolLinePaint): string {
@@ -130,5 +139,5 @@ export function toolLine(input: ToolLineInput, width: number, paint: ToolLinePai
   const prefixWidth = 2 + visibleWidth(name) + 2; // glyph, space, name, two spaces
   const detailMax = Math.max(0, Math.min(DETAIL_CAP, width - prefixWidth - visibleWidth(meta) - 2));
   const detail = middleTruncate(describeArgs(input).replace(/\s+/g, " "), detailMax);
-  return `${glyph} ${paint.name(name)}  ${paint.detail(detail)}  ${metaPaint(meta)}`;
+  return clampLine(`${glyph} ${paint.name(name)}  ${paint.detail(detail)}  ${metaPaint(meta)}`, width);
 }

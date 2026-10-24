@@ -8,7 +8,7 @@ Borders, tool inspection, and turn folding for Pi's terminal transcript.
 
 | Mode | Display |
 | --- | --- |
-| `1-line` | Compact tool name, argument summary, and estimated output tokens. Long summaries may omit their middle. |
+| `1-line` | Compact tool name, argument summary, and estimated output tokens. Long summaries may omit their middle; widths are measured in terminal columns (a CJK character takes two), so a row never exceeds the terminal width. |
 | `preview` | Complete **Input** as formatted JSON, plus the first 10 logical lines of **Output**. |
 | `native` | Complete **Input** and **Output**. The historical mode name is retained for commands and saved sessions. |
 

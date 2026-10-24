@@ -26,7 +26,7 @@ import { homedir } from "node:os";
 
 import { assistantRendersNothing, captureTui, findChatContainer, isAssistantRow, isToolRow, type ContainerLike, type Renderable, type TuiLike } from "./chat.ts";
 import { DOTTED, fitLine, frame, frameOverhead, MIN_FRAME_WIDTH, ROUNDED_DASHED, rule, SQUARE, trimBlankEdges, type FrameStyle } from "./frame.ts";
-import { formatTokens, toolLine, type ToolStatus } from "./tool-line.ts";
+import { clampLine, formatTokens, toolLine, type ToolStatus } from "./tool-line.ts";
 import { computeFoldPlan, EMPTY_PLAN, formatSummary, type FoldPlan, type TurnFoldMode } from "./turn-fold.ts";
 import { withTranscriptAnchor } from "./viewport.ts";
 import { getThinkingLevelColorizer } from "./loader/format.ts";
@@ -247,12 +247,12 @@ function frameInsideMouseRegion(region: unknown, label: string): boolean {
 
 // ─── Fold summary line ──────────────────────────────────────────────────────────────────────
 
-function renderFoldSummary(row: object): string[] | undefined {
+function renderFoldSummary(row: object, width: number): string[] | undefined {
   const { fold } = S();
   if (!fold.hidden.has(row)) return undefined;
   const summary = fold.summary.get(row);
   if (!summary) return [];
-  const text = `${fg("muted")("▶")} ${fg("dim")(formatSummary(summary))}`;
+  const text = clampLine(`${fg("muted")("▶")} ${fg("dim")(formatSummary(summary))}`, width);
   return S().tight.has(row) ? [text] : ["", text];
 }
 
@@ -447,7 +447,7 @@ function patchedToolHandleMouse(this: ToolExecutionComponent, event: TuiMouseEve
 
 function patchedToolRender(this: ToolExecutionComponent, width: number): string[] {
   toolTitles.delete(this);
-  const folded = renderFoldSummary(this);
+  const folded = renderFoldSummary(this, width);
   if (folded) return folded;
   const state = S();
   const c = this as unknown as { hideComponent: boolean; toolName: string; args: unknown };
@@ -499,7 +499,7 @@ function isThinkingRow(child: unknown): boolean {
 }
 
 function patchedAssistantRender(this: AssistantMessageComponent, width: number): string[] {
-  const folded = renderFoldSummary(this);
+  const folded = renderFoldSummary(this, width);
   if (folded) return folded;
   if (!S().fold.stripThinking.has(this)) return globals.originals.assistantRender.call(this, width);
   // Render prose only: drop thinking frames and the spacer pi inserts right after each of them.
@@ -523,11 +523,11 @@ function patchedAssistantRender(this: AssistantMessageComponent, width: number):
 }
 
 function patchedCustomMessageRender(this: CustomMessageComponent, width: number): string[] {
-  return renderFoldSummary(this) ?? globals.originals.customMessageRender.call(this, width);
+  return renderFoldSummary(this, width) ?? globals.originals.customMessageRender.call(this, width);
 }
 
 function patchedBashExecutionRender(this: BashExecutionComponent, width: number): string[] {
-  return renderFoldSummary(this) ?? globals.originals.bashExecutionRender.call(this, width);
+  return renderFoldSummary(this, width) ?? globals.originals.bashExecutionRender.call(this, width);
 }
 
 // ─── User prompt box: display-only, the prompt still travels Pi's native user-message path ──

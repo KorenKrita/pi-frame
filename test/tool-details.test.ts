@@ -514,6 +514,16 @@ describe("complete tool input and output", () => {
     }
   });
 
+  test.each([40, 80])("one-line rows and fold summaries with Chinese arguments fit width %i", (width) => {
+    const task = "把这个很长的中文提示词交给子代理去调研同类项目并且输出报告文件到临时目录里面".repeat(2);
+    const row = h.add("delegate_task", { task }, {}, result("done"));
+    const rendered = row.render(width);
+    expect(rendered.every((line) => visibleWidth(line) <= width)).toBe(true);
+    expect(stripTerminalSequences(rendered.join("\n"))).toContain("~1 tok");
+    h.shortcut("ctrl+shift+o");
+    expect(h.chat.render(width).every((line) => visibleWidth(line) <= width)).toBe(true);
+  });
+
   test("the tool page of /frame-settings shows the current modes and persists changes to the session", async () => {
     const offered = await h.toolSettings({ toolMode: "preview", fold: true });
     expect(offered).toMatchObject({ toolMode: "oneLine", fold: false });
