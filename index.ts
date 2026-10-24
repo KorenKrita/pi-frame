@@ -510,7 +510,34 @@ function patchedToolRender(this: ToolExecutionComponent, width: number): string[
   if (state.toolMode === "oneLine") {
     toolTitles.set(this, { x: 3, y: lead.length, width: Math.min(visibleWidth(c.toolName), width - 6) });
   }
-  return [...lead, ...frame(lines, width, { style, glyphs: SQUARE, paint, title, titlePaint: (t) => t })];
+  // Framing pads/truncates every row by display width, which dominates a redraw of many open tools.
+  // The inner rows come from Pi's own render caches, so an unchanged box compares equal row by row.
+  // The border sample and the painted title put the theme colors in the key: Pi swaps themes behind
+  // the same theme object. Images are left out: Pi replaces their rows asynchronously after transcoding.
+  const key = `${width}\u0000${style}\u0000${lead.length}\u0000${paint(SQUARE.v)}\u0000${title}`;
+  const cacheable = !(this as unknown as ToolDisplayState).result?.content.some((part) => part.type === "image");
+  const cached = frameCache.get(this);
+  if (cacheable && cached && cached.key === key && sameLines(cached.source, lines)) return cached.out;
+  const out = [...lead, ...frame(lines, width, { style, glyphs: SQUARE, paint, title, titlePaint: (t) => t })];
+  if (cacheable) frameCache.set(this, { key, source: lines, out });
+  else frameCache.delete(this);
+  return out;
+}
+
+interface FrameCacheEntry {
+  key: string;
+  /** Unframed rows the cached box was built from. */
+  source: string[];
+  out: string[];
+}
+
+const frameCache = new WeakMap<ToolExecutionComponent, FrameCacheEntry>();
+
+/** Every row must match: Pi components can change a middle row while the first and last stay put. */
+function sameLines(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
 }
 
 function isThinkingRow(child: unknown): boolean {

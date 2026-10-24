@@ -18,6 +18,8 @@ For tools with custom renderers, a supplementary **Tool view** retains Pi's orig
 
 The frame title retains Pi's display-text token estimate (including image placeholders when images are hidden), not input. The raw Output section itself contains only text blocks and never adds image placeholders.
 
+An open box whose rows, width, title, and theme colors are unchanged is reused between frames instead of being re-framed; boxes with images are always redrawn.
+
 Rendering does not change tool schemas, execution, stored arguments, or results, and does not append copies of input to model context.
 
 ## Settings: `/frame-settings`
@@ -69,7 +71,7 @@ JITI_FS_CACHE=0 node test/node-render.mjs
 bun test/smoke.ts
 ```
 
-The automated regression suite uses Pi's real `ToolExecutionComponent`, registered tools without renderers, native write/edit renderers, custom mouse regions, and Kitty image output. It covers the three-mode cycle, long/multiblock output, mutable streaming updates, caching, text/image separation, errors, reload, folding, copy mode, and narrow widths. The Node script also exercises Pi's actual jiti loader/reload, a 150,000-line custom result, and warm-cache redraws of 100 tools with 50 KB of output each. `test/smoke.ts` is an additional visual transcript dump, not an assertion-based test.
+The automated regression suite uses Pi's real `ToolExecutionComponent`, registered tools without renderers, native write/edit renderers, custom mouse regions, and Kitty image output. It covers the three-mode cycle, long/multiblock output, mutable streaming updates, caching, text/image separation, errors, reload, folding, copy mode, and narrow widths. The Node script also exercises Pi's actual jiti loader/reload, a 150,000-line custom result, warm-cache redraws of 100 tools with 50 KB of output each, and redraws of 100 open preview boxes with 20 KB of input each. `test/smoke.ts` is an additional visual transcript dump, not an assertion-based test.
 
 The fullscreen interaction tests use Pi's real `TuiAltScreen`, `ScrollView`, chat viewport, and stable TUI reference with a memory-backed terminal. They inject keyboard and SGR mouse reports to check reading-position preservation, bottom following, local name/Output clicks, and drag selection. No tool commands are executed.
 

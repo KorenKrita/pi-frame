@@ -80,5 +80,20 @@ for (let pass = 0; pass < 10; pass++) for (const row of rows) row.render(110);
 const perPass = (performance.now() - start) / 10;
 assert.equal(extractions, warmed, "unchanged single-line output must not be extracted again");
 console.log(`PASS Node cached repaint: 100 × 50KB outputs, ${perPass.toFixed(2)} ms/pass, zero re-extractions`);
+mode = "preview";
+await load();
+const bulky = "中文内容abc ".repeat(2000); // ~20 KB of input JSON per tool, CJK-heavy like real sessions
+const boxes = Array.from({ length: 100 }, () => {
+  const row = new ToolExecutionComponent("custom", "node-preview", { content: bulky }, {}, {}, { requestRender() {} }, process.cwd());
+  row.updateResult({ content: [{ type: "text", text: "line\n".repeat(20) }], isError: false }, false);
+  row.render(110);
+  return row;
+});
+const firstFrame = boxes.map((row) => row.render(110));
+const boxStart = performance.now();
+for (let pass = 0; pass < 10; pass++) for (const row of boxes) row.render(110);
+const boxPass = (performance.now() - boxStart) / 10;
+assert(boxes.every((row, i) => row.render(110) === firstFrame[i]), "unchanged open boxes must be reused");
+console.log(`PASS Node cached boxes: 100 open tools × 20KB input in preview, ${boxPass.toFixed(2)} ms/pass`);
 // End the session the way Pi does so watchers and timers stop and the process can exit.
 for (const handler of loaded.extensions[0].handlers.get("session_shutdown") ?? []) await handler({}, ctx);

@@ -154,6 +154,63 @@ describe("complete tool input and output", () => {
     expect(lines(row, width).join("").replace(/[│\s]/g, "")).toContain('"END":1}');
   });
 
+  test("an unchanged open box is reused, and any change to its content or colors rebuilds it", () => {
+    const row = h.add("custom", { value: "cached input" }, {}, result("first output"));
+    h.press();
+    const first = row.render(110);
+    expect(row.render(110)).toBe(first);
+    expect(row.render(80)).not.toBe(first);
+    row.updateResult(result("second output"), false);
+    expect(show(row)).toContain("second output");
+    const dark = row.render(110);
+    initTheme("light");
+    try {
+      const light = row.render(110);
+      expect(light).not.toBe(dark);
+      expect(light[1]).not.toBe(dark[1]); // border color follows the theme
+      expect(light.map(stripTerminalSequences)).toEqual(dark.map(stripTerminalSequences));
+    } finally {
+      initTheme("dark");
+    }
+  });
+
+  test("boxes with images are never reused", () => {
+    const previous = getCapabilities();
+    setCapabilities({ ...previous, images: "kitty" });
+    try {
+      const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aZ1sAAAAASUVORK5CYII=";
+      const row = h.add("image", {}, {}, { content: [{ type: "text", text: "receipt" }, { type: "image", data: png, mimeType: "image/png" }], isError: false });
+      h.press();
+      expect(row.render(110)).not.toBe(row.render(110));
+    } finally {
+      setCapabilities(previous);
+    }
+  });
+
+  test("clicks still land after a reused box: Output, native targets, and the local title", () => {
+    let nativeClicks = 0;
+    const row = h.add("notes", longArgs(), {
+      renderResult: () => new MouseRegion(new Text("CACHED_NATIVE_TARGET", 0, 0), () => { nativeClicks++; return { handled: true }; }),
+    }, result(`${"cached output\n".repeat(15)}CACHED_TAIL`));
+    const click = (needle: string) => {
+      const before = row.render(110);
+      const rendered = before.map(stripTerminalSequences);
+      if (rendered.some((line) => line.includes("Input"))) expect(row.render(110)).toBe(before); // a reused box
+      const y = rendered.findIndex((line) => line.includes(needle));
+      expect(y).toBeGreaterThanOrEqual(0);
+      const x = rendered[y]!.indexOf(needle);
+      return row.handleMouse({ type: "click", button: "left", x, y, screenX: x, screenY: y, width: 110, height: rendered.length, shift: false, alt: false, ctrl: false });
+    };
+    row.render(110);
+    expect(click("notes")?.handled).toBe(true); // opens the compact row locally
+    expect(click("cached output")?.handled).toBe(true);
+    expect(show(row)).toContain("CACHED_TAIL");
+    expect(click("CACHED_NATIVE_TARGET")?.handled).toBe(true);
+    expect(nativeClicks).toBe(1);
+    expect(click("notes")?.handled).toBe(true);
+    expect(show(row)).not.toContain("Input");
+  });
+
   test("custom summaries do not hide the actual tool output", () => {
     const row = h.add("custom", { action: "inspect" }, {
       renderCall: () => new Text("custom call view", 0, 0),
