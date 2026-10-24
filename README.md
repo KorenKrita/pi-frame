@@ -48,7 +48,7 @@ Ported from [pi-topping-statusline](https://github.com/underactive/pi-topping-st
 
 - `Ctrl+O`: cycle the global tool mode. In fullscreen mode the current reading row stays anchored; a viewport already following the bottom continues following it.
 - `/frame-settings` → 工具显示: select a tool mode (1-line, preview, native) and fold state directly.
-- `Ctrl+Shift+O`: fold/unfold settled tool activity and intermediate prose.
+- `Ctrl+Shift+O`: fold/unfold settled tool activity and intermediate prose. Each folded turn becomes one summary line (`▶ 5 tools · 1 failed · 2 msgs · 1m 5s`) with the failure count in the error color.
 - `Ctrl+T`: Pi's native thinking toggle.
 - `/cp`: toggle copy mode, removing frame side bars so terminal text selection does not copy them.
 - In `1-line`, click the **tool name** to open only that tool's Input and Output preview. Click its title name again to close it. Pending tools can be opened to inspect their Input too.

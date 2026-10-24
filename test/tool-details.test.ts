@@ -556,6 +556,22 @@ describe("complete tool input and output", () => {
     expect(h.chat.render(110).map(stripTerminalSequences).join("\n")).toContain("FULL_INPUT_MIDDLE_MUST_BE_VISIBLE");
   });
 
+  test("folded turns count failed tools in the error color", () => {
+    h.add("notes", {}, {}, result("saved"));
+    h.add("notes", {}, {}, { ...result("rejected"), isError: true });
+    h.add("notes", {}, {}, { ...result("rejected again"), isError: true });
+    h.shortcut("ctrl+shift+o");
+    const folded = h.chat.render(110);
+    const summary = folded.find((line) => stripTerminalSequences(line).includes("tools"))!;
+    expect(stripTerminalSequences(summary)).toBe("▶ 3 tools · 2 failed");
+    expect(summary).toContain(themeModule.theme.fg("error", "2 failed"));
+    h.shortcut("ctrl+shift+o");
+    h.add("notes", {}, {}, result("fine"));
+    h.chat.children.splice(0, 3);
+    h.shortcut("ctrl+shift+o");
+    expect(h.chat.render(110).map(stripTerminalSequences)).toContain("▶ 1 tool");
+  });
+
   test("reloading the module does not stack raw I/O views or lose the native renderer", async () => {
     const row = h.add("custom", { value: "reload input" }, { renderResult: () => new Text("native after reload", 0, 0) }, result("reload receipt"));
     h.press();

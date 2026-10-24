@@ -6,6 +6,8 @@ export type TurnFoldMode = "expanded" | "compact";
 
 export interface FoldSummary {
   tools: number;
+  /** Settled tool rows whose result is an error. */
+  failed: number;
   msgs: number;
   notes: number;
   seconds?: number;
@@ -49,6 +51,11 @@ export function splitTurns(rows: Renderable[]): Renderable[][] {
   return turns;
 }
 
+function toolFailed(row: Renderable): boolean {
+  const tool = row as unknown as { isPartial?: boolean; result?: { isError?: boolean } };
+  return !tool.isPartial && tool.result?.isError === true;
+}
+
 /** `keepLast`: the last turn is live (agent streaming) and must stay fully visible. */
 export function computeFoldPlan(chat: ContainerLike, keepLast: boolean): FoldPlan {
   const plan: FoldPlan = { hidden: new WeakSet(), summary: new WeakMap(), stripThinking: new WeakSet() };
@@ -60,6 +67,7 @@ export function computeFoldPlan(chat: ContainerLike, keepLast: boolean): FoldPla
     }
     if (lastAnswer) plan.stripThinking.add(lastAnswer);
     let tools = 0;
+    let failed = 0;
     let msgs = 0;
     let notes = 0;
     let first: Renderable | undefined;
@@ -78,7 +86,10 @@ export function computeFoldPlan(chat: ContainerLike, keepLast: boolean): FoldPla
         }
       }
       if (row === lastAnswer) continue;
-      if (isTool) tools++;
+      if (isTool) {
+        tools++;
+        if (toolFailed(row)) failed++;
+      }
       else if (isNote) notes++;
       else if (isAssistantRow(row)) {
         if (assistantHasText(row)) msgs++;
@@ -90,7 +101,7 @@ export function computeFoldPlan(chat: ContainerLike, keepLast: boolean): FoldPla
     }
     if (first && tools + msgs + notes > 0) {
       const seconds = firstTs !== undefined && lastTs !== undefined && lastTs > firstTs ? Math.round((lastTs - firstTs) / 1000) : undefined;
-      plan.summary.set(first, { tools, msgs, notes, seconds });
+      plan.summary.set(first, { tools, failed, msgs, notes, seconds });
     }
   }
   return plan;
@@ -105,11 +116,16 @@ export function formatDuration(seconds: number): string {
   return `${h}h ${m % 60}m`;
 }
 
-export function formatSummary(summary: FoldSummary): string {
+type Paint = (text: string) => string;
+const plain: Paint = (text) => text;
+
+/** `3 tools · 1 failed · 2 msgs · 1m 5s`; the failure count gets its own paint so it stands out. */
+export function formatSummary(summary: FoldSummary, paint: { dim: Paint; failed: Paint } = { dim: plain, failed: plain }): string {
   const parts: string[] = [];
-  if (summary.tools) parts.push(`${summary.tools} tool${summary.tools === 1 ? "" : "s"}`);
-  if (summary.msgs) parts.push(`${summary.msgs} msg${summary.msgs === 1 ? "" : "s"}`);
-  if (summary.notes) parts.push(`${summary.notes} note${summary.notes === 1 ? "" : "s"}`);
-  if (summary.seconds !== undefined) parts.push(formatDuration(summary.seconds));
-  return parts.join(" · ");
+  if (summary.tools) parts.push(paint.dim(`${summary.tools} tool${summary.tools === 1 ? "" : "s"}`));
+  if (summary.failed) parts.push(paint.failed(`${summary.failed} failed`));
+  if (summary.msgs) parts.push(paint.dim(`${summary.msgs} msg${summary.msgs === 1 ? "" : "s"}`));
+  if (summary.notes) parts.push(paint.dim(`${summary.notes} note${summary.notes === 1 ? "" : "s"}`));
+  if (summary.seconds !== undefined) parts.push(paint.dim(formatDuration(summary.seconds)));
+  return parts.join(paint.dim(" · "));
 }

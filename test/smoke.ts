@@ -87,7 +87,7 @@ press(); console.log("back to", statuses["pi-frame"], "expanded=", toolsExpanded
 shortcuts["ctrl+shift+o"](ctx); dump("folded idle " + statuses["pi-frame"]);
 handlers.agent_start.forEach((h: Function) => h({}, ctx)); dump("folded streaming"); handlers.agent_end.forEach((h: Function) => h({}, ctx));
 const plan = computeFoldPlan(chat as any, false);
-console.log("summary:", [...(chat.children as any[])].map((r) => plan.summary.get(r)).filter(Boolean).map(formatSummary));
+console.log("summary:", [...(chat.children as any[])].map((r) => plan.summary.get(r)).filter(Boolean).map((s) => formatSummary(s!)));
 // hidden thinking
 { const live = (chat.children as any[]).filter((c) => c instanceof AssistantMessageComponent).at(-1); live.setHideThinkingBlock(true); dump("hidden thinking on live turn"); }
 console.log("entries persisted:", entries.length, "renders:", renders);

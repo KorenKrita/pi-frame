@@ -252,7 +252,7 @@ function renderFoldSummary(row: object, width: number): string[] | undefined {
   if (!fold.hidden.has(row)) return undefined;
   const summary = fold.summary.get(row);
   if (!summary) return [];
-  const text = clampLine(`${fg("muted")("▶")} ${fg("dim")(formatSummary(summary))}`, width);
+  const text = clampLine(`${fg("muted")("▶")} ${formatSummary(summary, { dim: fg("dim"), failed: fg("error") })}`, width);
   return S().tight.has(row) ? [text] : ["", text];
 }
 
