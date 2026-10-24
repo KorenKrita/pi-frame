@@ -1,5 +1,5 @@
 // One-line tool summary: `▸ bash    ls -la ~/x                       · 12 lines`
-import { sliceByColumn, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { sliceByColumn, stripTerminalSequences, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import type { Paint } from "./frame.ts";
 
 export type ToolStatus = "pending" | "success" | "error";
@@ -198,6 +198,7 @@ export function toolLine(input: ToolLineInput, width: number, paint: ToolLinePai
   const meta = `· ${describeResult(input)}`;
   const prefixWidth = 2 + visibleWidth(name) + 2; // glyph, space, name, two spaces
   const detailMax = Math.max(0, Math.min(DETAIL_CAP, width - prefixWidth - visibleWidth(meta) - 2));
-  const detail = middleTruncate(describeArgs(input).replace(/\s+/g, " "), detailMax);
+  // Arguments are painted as one plain run: escape sequences inside them would be cut mid-style by the slice.
+  const detail = middleTruncate(stripTerminalSequences(describeArgs(input)).replace(/\s+/g, " "), detailMax);
   return clampLine(`${glyph} ${paint.name(name)}  ${paint.detail(detail)}  ${metaPaint(meta)}`, width);
 }

@@ -22,6 +22,13 @@ describe("single-line width", () => {
     expect(out).not.toMatch(/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/);
   });
 
+  test("styled arguments are cut as plain text, so their style cannot leak into the token count", () => {
+    const input: ToolLineInput = { toolName: "bash", args: { command: "\x1b[1m" + "a".repeat(200) + "\x1b[22m" }, status: "success", output: "ok" };
+    const line = toolLine(input, 60, paint);
+    expect(line).not.toContain("\x1b[");
+    expect(visibleWidth(line)).toBeLessThanOrEqual(60);
+  });
+
   test("middleTruncate returns nothing for a zero budget", () => {
     expect(middleTruncate("abc", 0)).toBe("");
   });
