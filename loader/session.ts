@@ -317,7 +317,7 @@ export class SessionManager {
 	}
 
 	private usable(ctx: ExtensionContext): boolean {
-		return !!ctx.hasUI && ctx.mode !== "print";
+		return !!ctx.hasUI && ctx.mode === "tui";
 	}
 
 	/**
